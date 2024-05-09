@@ -27,6 +27,6 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Matchmaking
 - Friend Challenges
 
-**InAppPurchases**
-- Handle puprchases
-- Handle refunds
+**InAppPurchase**
+- Get list of products
+- Purchase product
