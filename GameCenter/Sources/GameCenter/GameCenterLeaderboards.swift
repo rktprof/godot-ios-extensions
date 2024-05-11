@@ -75,7 +75,7 @@ class GameCenterLeaderboards:RefCounted
 						{
 							for entry:GKLeaderboard.Entry in entries
 							{
-								var player:LeaderboardPlayer = LeaderboardPlayer()
+								var player:GameCenterLeaderboardPlayer = GameCenterLeaderboardPlayer()
 								player.displayName = entry.player.displayName
 								player.score = entry.score 
 								players.append(value: Variant(player))

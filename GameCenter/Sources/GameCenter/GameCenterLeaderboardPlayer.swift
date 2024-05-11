@@ -1,7 +1,7 @@
 import SwiftGodot
 
 @Godot
-class LeaderboardPlayer:RefCounted
+class GameCenterLeaderboardPlayer:RefCounted
 {
 	@Export var displayName:String = ""
 	@Export var score:Int = 0
