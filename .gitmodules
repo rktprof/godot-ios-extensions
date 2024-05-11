@@ -1,0 +1,3 @@
+[submodule "SwiftGodot"]
+	path = SwiftGodot
+	url = git@github:migueldeicaza/SwiftGodot.git
