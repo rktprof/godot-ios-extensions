@@ -31,7 +31,7 @@ class InAppPurchase:RefCounted
 	private(set) var productIdentifiers:[String] = []
 
 	private(set) var products:[Product]
-	private(set) var purchasedProducts:[Product] = []
+	private(set) var purchasedProducts: Set<String> = Set<String>()
 	
 	var updateListenerTask: Task<Void, Error>? = nil
 
@@ -78,21 +78,12 @@ class InAppPurchase:RefCounted
 					let result: Product.PurchaseResult = try await product.purchase()
 					switch result
 					{
-						case let .success(.verified(transaction)):
+						case .success(let verification):
 							// Success
 							let transaction: Transaction = try checkVerified(verification)
 							await transaction.finish()
 
 							params.append(value: Variant(OK))
-							onComplete.callv(arguments: params)
-							break
-						case let .success(.unverified(_, error)):
-							// Purchase successful but transaction can't be verified
-							// Could be hacked phone?
-							let transaction: Transaction = try checkVerified(verification)
-							await transaction.finish()
-
-							params.append(value: Variant(PURCHASE_SUCCESSFUL_BUT_UNVERIFIED))
 							onComplete.callv(arguments: params)
 							break
 						case .pending:
@@ -118,17 +109,9 @@ class InAppPurchase:RefCounted
 	}
 
 	@Callable
-	func isPurchased(_ productIdentifier:String) -> Bool
+	func isPurchased(_ productID:String) -> Bool
 	{
-		for product in purchasedProducts
-		{
-			if (product.id == productIdentifier)
-			{
-				return true
-			}
-		}
-
-		return false
+		return purchasedProducts.contains(productID)
 	}
 
 	@Callable
@@ -144,7 +127,6 @@ class InAppPurchase:RefCounted
 
 				for storeProduct: Product in storeProducts
 				{
-					GD.print("Found product: \(storeProduct)")
 					var product:IAPProduct = IAPProduct()
 					product.displayName = storeProduct.displayName
 					product.displayPrice = storeProduct.displayPrice
@@ -179,37 +161,6 @@ class InAppPurchase:RefCounted
 	}
 
 	@Callable
-	func getPurchasedProducts(onComplete:Callable)
-	{
-		var products:GArray = GArray()
-		for purchasedProduct: Product in purchasedProducts
-		{
-			var product:IAPProduct = IAPProduct()
-			product.displayName = purchasedProduct.displayName
-			product.displayPrice = purchasedProduct.displayPrice
-			product.storeDescription = purchasedProduct.description
-			product.productID = purchasedProduct.id
-			switch (purchasedProduct.type)
-			{
-				case .consumable:
-					product.type = IAPProduct.TYPE_CONSUMABLE
-				case .nonConsumable:
-					product.type = IAPProduct.TYPE_NON_CONSUMABLE
-				case .autoRenewable:
-					product.type = IAPProduct.TYPE_AUTO_RENEWABLE
-				case .nonRenewable:
-					product.type = IAPProduct.TYPE_NON_RENEWABLE
-				default:
-					product.type = IAPProduct.TYPE_UNKNOWN
-			}	
-		}
-
-		var params:GArray = GArray()
-		params.append(value:Variant(products))
-		onComplete.callv(arguments: params)
-	}
-
-	@Callable
 	func restorePurchases(onComplete:Callable)
 	{
 		Task
@@ -231,11 +182,6 @@ class InAppPurchase:RefCounted
 	}
 
 	// Internal functionality
-
-	func isPurchased(_ product:Product) async throws -> Bool
-	{
-		return purchasedProducts.contains(product)
-	}
 
 	func getProduct(_ productIdentifier:String) async throws -> Product?
 	{
@@ -277,12 +223,12 @@ class InAppPurchase:RefCounted
 			if transaction.revocationDate == nil
 			{
 				self.purchasedProducts.insert(transaction.productID)
-				emit(signal: InAppPurchase.productPurchased, product.id)
+				emit(signal: InAppPurchase.productPurchased, transaction.productID)
 			}
 			else
 			{
 				self.purchasedProducts.remove(transaction.productID)
-				emit(signal: InAppPurchase.productRevoked, product.id)
+				emit(signal: InAppPurchase.productRevoked, transaction.productID)
 			}
 		}
 	}
