@@ -17,11 +17,16 @@ public enum StoreError: Error {
 @Godot
 class InAppPurchase:RefCounted
 {
-	let ERROR:Int = 0
-	let OK:Int = 1
-	let USER_CANCELLED_PURCHASE:Int = 2
+	#signal("product_purchased", arguments: ["product_id": String.self])
+	#signal("product_revoked", arguments: ["product_id": String.self])
+	
+	let OK:Int = 0
+	let ERROR:Int = 1
+	let FAILED_TO_GET_PRODUCTS:Int = 2
 	let PURCHASE_FAILED:Int = 3
-	let FAILED_TO_GET_PRODUCTS:Int = 4
+	let PURCHASE_SUCCESSFUL_BUT_UNVERIFIED:Int = 4
+	let PURCHASE_PENDING_AUTHORIZATION:Int = 5
+	let PURCHASE_CANCELLED_BY_USER:Int = 6
 
 	private(set) var productIdentifiers:[String] = []
 
@@ -70,19 +75,34 @@ class InAppPurchase:RefCounted
 			{
 				if let product: Product = try await getProduct(productIdentifier)
 				{
-					let result = try await product.purchase()
+					let result: Product.PurchaseResult = try await product.purchase()
 					switch result
 					{
-						case .success(let verification):
+						case let .success(.verified(transaction)):
+							// Success
 							let transaction: Transaction = try checkVerified(verification)
 							await transaction.finish()
 
 							params.append(value: Variant(OK))
 							onComplete.callv(arguments: params)
+							break
+						case let .success(.unverified(_, error)):
+							// Purchase successful but transaction can't be verified
+							// Could be hacked phone?
+							let transaction: Transaction = try checkVerified(verification)
+							await transaction.finish()
+
+							params.append(value: Variant(PURCHASE_SUCCESSFUL_BUT_UNVERIFIED))
+							onComplete.callv(arguments: params)
+							break
 						case .pending:
+							// Transaction waiting on authentication or approval
+							params.append(value: Variant(PURCHASE_PENDING_AUTHORIZATION))
+							onComplete.callv(arguments: params)
 							break
 						case .userCancelled:
-							params.append(value: Variant(USER_CANCELLED_PURCHASE))
+							// User cancelled the purchase
+							params.append(value: Variant(PURCHASE_CANCELLED_BY_USER))
 							onComplete.callv(arguments: params)
 							break;
 					}
@@ -114,7 +134,6 @@ class InAppPurchase:RefCounted
 	@Callable
 	func getProducts(identifiers:[String], onComplete:Callable)
 	{
-		
 		Task
 		{
 			var params:GArray = GArray()
@@ -159,6 +178,58 @@ class InAppPurchase:RefCounted
 		}
 	}
 
+	@Callable
+	func getPurchasedProducts(onComplete:Callable)
+	{
+		var products:GArray = GArray()
+		for purchasedProduct: Product in purchasedProducts
+		{
+			var product:IAPProduct = IAPProduct()
+			product.displayName = purchasedProduct.displayName
+			product.displayPrice = purchasedProduct.displayPrice
+			product.storeDescription = purchasedProduct.description
+			product.productID = purchasedProduct.id
+			switch (purchasedProduct.type)
+			{
+				case .consumable:
+					product.type = IAPProduct.TYPE_CONSUMABLE
+				case .nonConsumable:
+					product.type = IAPProduct.TYPE_NON_CONSUMABLE
+				case .autoRenewable:
+					product.type = IAPProduct.TYPE_AUTO_RENEWABLE
+				case .nonRenewable:
+					product.type = IAPProduct.TYPE_NON_RENEWABLE
+				default:
+					product.type = IAPProduct.TYPE_UNKNOWN
+			}	
+		}
+
+		var params:GArray = GArray()
+		params.append(value:Variant(products))
+		onComplete.callv(arguments: params)
+	}
+
+	@Callable
+	func restorePurchases(onComplete:Callable)
+	{
+		Task
+		{
+			var params:GArray = GArray()
+			do
+			{
+				try await AppStore.sync()
+				params.append(value:Variant(OK))
+				onComplete.callv(arguments: params)
+			}
+			catch
+			{
+				GD.pushError("Failed to restore purchases: \(error)")
+				params.append(value:Variant(ERROR))
+				onComplete.callv(arguments: params)
+			}
+		}
+	}
+
 	// Internal functionality
 
 	func isPurchased(_ product:Product) async throws -> Bool
@@ -196,25 +267,24 @@ class InAppPurchase:RefCounted
 
 	func updateProductStatus() async
 	{
-		var purchasedProducts:[Product] = []
-
 		for await result: VerificationResult<Transaction> in Transaction.currentEntitlements
 		{
-			do
+			guard case .verified(let transaction) = result else
 			{
-				let transaction: Transaction = try checkVerified(result)
-				if let product: Product = products.first(where: { $0.id == transaction.productID})
-				{
-					purchasedProducts.append(product)
-				}				
+				continue
 			}
-			catch
+
+			if transaction.revocationDate == nil
 			{
-				GD.pushError("Error while updating product status: \(error)")
+				self.purchasedProducts.insert(transaction.productID)
+				emit(signal: InAppPurchase.productPurchased, product.id)
+			}
+			else
+			{
+				self.purchasedProducts.remove(transaction.productID)
+				emit(signal: InAppPurchase.productRevoked, product.id)
 			}
 		}
-
-		self.purchasedProducts = purchasedProducts
 	}
 
 	func checkVerified<T>(_ result:VerificationResult<T>) throws -> T
