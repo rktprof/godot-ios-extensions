@@ -14,19 +14,22 @@ Everything is provided as-is, I'm building new plugins as I need them
   - Get list of friends
   - Open Friends overlay
 
-**Networking/Bonjour**
+**Networking/Bonjour (The Networking plugin should work on any platform with Bonjour support)**
 - LocalNetworkListener
   - Start a server listening for connections on the local network
 - LocalNetworkDiscovery
   - Start a browser to find servers created by LocalNetworkListener
   - Resolve endpoint of discovered server
 
-## Coming: (assuming I can figure it out)
-
-**GameCenter**
-- Matchmaking
-- Friend Challenges
-
 **InAppPurchase**
 - Get list of products
 - Purchase product
+
+## Coming: (assuming I can figure it out)
+
+**GameCenter**
+- Achievements
+  - Reward achievements
+  - Open overlay
+  - Get achievement data
+- Matchmaking
