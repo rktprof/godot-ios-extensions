@@ -7,6 +7,11 @@ class LocalNetworkListener:RefCounted
 	static var DEFAULT_PORT:Int = 64201
 	var listener:NWListener? = nil
 
+	deinit
+	{
+		stop()
+	}
+
 	@Callable
 	func start(typeDescriptor:String, name:String, port:Int, broadcast_port:Int = DEFAULT_PORT)
 	{

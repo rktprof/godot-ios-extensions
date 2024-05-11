@@ -12,6 +12,11 @@ class LocalNetworkDiscovery:RefCounted
 	var connection:NWConnection? = nil
 	var discoveredDevices: [Int: NWEndpoint] = [:]
 
+	deinit
+	{
+		stop()
+	}
+
 	@Callable
 	func start(typeDescriptor:String)
 	{
