@@ -14,7 +14,7 @@ Everything is provided as-is, I'm building new plugins as I need them
   - Get list of friends
   - Open Friends overlay
 
-**Networking/Bonjour (The Networking plugin should work on any platform with Bonjour support)**
+**Bonjour (The Bonjour plugin should work on most platforms)**
 - LocalNetworkListener
   - Start a server listening for connections on the local network
 - LocalNetworkDiscovery
