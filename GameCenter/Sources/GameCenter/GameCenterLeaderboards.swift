@@ -5,7 +5,7 @@ import UIKit
 #endif
 
 @Godot
-class GameCenterLeaderboards:Object
+class GameCenterLeaderboards:RefCounted
 {
 	#if os(iOS)
 	var viewController:UIGameCenterViewController = UIGameCenterViewController()
@@ -20,15 +20,13 @@ class GameCenterLeaderboards:Object
 			do
 			{
 				try await GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: [leaderboardID])
-				params.append(value: Variant(true))
+				params.append(value: Variant(OK))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
-				var error:String = error.localizedDescription
 				GD.pushError("Error submitting score: \(error).")
-				params.append(value:Variant(false))
-				params.append(value:Variant(error))
+				params.append(value:Variant(ERROR_FAILED_TO_SUBMIT_SCORE))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -66,11 +64,9 @@ class GameCenterLeaderboards:Object
 
 						if error != nil
 						{
-							var error: String = error?.localizedDescription ?? ""
 							GD.pushWarning(error)
 
-							params.append(value: Variant(false))
-							params.append(value: Variant(error))
+							params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
 							onComplete.callv(arguments: params)
 							return
 						}
@@ -86,7 +82,7 @@ class GameCenterLeaderboards:Object
 							}
 						}
 
-						params.append(value: Variant(true))
+						params.append(value: Variant(OK))
 						params.append(value: Variant(players))
 						onComplete.callv(arguments: params)
 					}
@@ -100,7 +96,6 @@ class GameCenterLeaderboards:Object
 	{
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(state: .leaderboards), onClose: onClose)
-		//viewController.showLeaderboards(onClose: onClose)
 		#endif
 	}
 
@@ -109,7 +104,6 @@ class GameCenterLeaderboards:Object
 	{
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(leaderboardID: leaderboardID, playerScope: GKLeaderboard.PlayerScope.global, timeScope: .allTime), onClose: onClose)
-		//viewController.showLeaderboard(leaderboardID, onClose: onClose)
 		#endif
 	}
 }

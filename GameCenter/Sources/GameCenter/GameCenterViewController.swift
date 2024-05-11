@@ -5,9 +5,9 @@ import UIKit
 
 class UIGameCenterViewController: UIViewController, GKGameCenterControllerDelegate
 {
-	var onControllerClosed:Callable = Callable()
+	var onControllerClosed:Callable? = nil
 
-	func showUIController(_ viewController:GKGameCenterViewController, onClose:Callable)
+	func showUIController(_ viewController:GKGameCenterViewController, onClose:Callable?)
 	{
 		do
 		{
@@ -18,13 +18,13 @@ class UIGameCenterViewController: UIViewController, GKGameCenterControllerDelega
 		}
 		catch
 		{
-			GD.pushError("Error: \(error.localizedDescription).")
+			GD.pushError("Error: \(error).")
 		}
 	}
 
 	func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController)
 	{
-    	gameCenterViewController.dismiss(animated:true, completion: { self.onControllerClosed.call() })
+    	gameCenterViewController.dismiss(animated:true, completion: { self.onControllerClosed?.call() })
 	}
 
 	func getRootController() -> UIViewController?

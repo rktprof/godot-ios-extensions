@@ -5,15 +5,12 @@ import UIKit
 #endif
 
 @Godot
-class GameCenterFriends:Object
+class GameCenterFriends:RefCounted
 {
-	enum AuthorizationStatus : Int
-	{
-		case NOT_DETERMINED = 0
-		case AUTHORIZED = 1
-		case DENIED = 2
-		case RESTRICTED = 3
-	}
+	let AUTHORIZATION_NOT_DETERMINED:Int = 0
+	let AUTHORIZATION_AUTHORIZED:Int = 1
+	let AUTHORIZATION_DENIED:Int = 2
+	let AUTHORIZATION_RESTRICTED:Int = 3
 
 	#if os(iOS)
 	var viewController:UIGameCenterViewController = UIGameCenterViewController()
@@ -40,15 +37,13 @@ class GameCenterFriends:Object
 					players.append(value: Variant(player))
 				}
 
-				params.append(value: Variant(true))
+				params.append(value: Variant(OK))
 				params.append(value: Variant(players))
 				onComplete.callv(arguments: params)
 
 			} catch {
-				var error:String = error.localizedDescription
 				GD.pushError("Error getting friends: \(error).")
-				params.append(value:Variant(false))
-				params.append(value:Variant(error))
+				params.append(value:Variant(ERROR_ACCESSING_FRIENDS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -78,19 +73,17 @@ class GameCenterFriends:Object
 		{
 			GKLocalPlayer.local.loadFriendsAuthorizationStatus() 
 			{ (status: GKFriendsAuthorizationStatus, error: (any Error)?) in
-				params.append(value:Variant(true))
+				params.append(value:Variant(OK))
 				switch status
 				{
 					case .notDetermined:
-						params.append(value:Variant(true))
+						params.append(value:Variant(self.AUTHORIZATION_NOT_DETERMINED))
 					case .authorized:
-						params.append(value:Variant(true))
+						params.append(value:Variant(self.AUTHORIZATION_AUTHORIZED))
 					case .denied:
-						params.append(value:Variant(false))
+						params.append(value:Variant(self.AUTHORIZATION_DENIED))
 					case .restricted:
-						params.append(value:Variant(false))
-					@unknown default:
-						params.append(value:Variant(false))
+						params.append(value:Variant(self.AUTHORIZATION_RESTRICTED))
 				}
 
 				onComplete.callv(arguments: params)
@@ -98,11 +91,9 @@ class GameCenterFriends:Object
 		}
 		catch
 		{
-			var error:String = error.localizedDescription
 			GD.pushError("Error accessing friends: \(error).")
 
-			params.append(value:Variant(false))
-			params.append(value:Variant(error))
+			params.append(value:Variant(ERROR_ACCESSING_FRIENDS))
 			onComplete.callv(arguments: params)
 		}
 	}
@@ -112,7 +103,6 @@ class GameCenterFriends:Object
 	{
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(state: .localPlayerFriendsList), onClose: onClose)
-		//viewController.showFriends(onClose: onClose)
 		#endif
 	}
 }

@@ -7,35 +7,33 @@ import GameKit
 import UIKit
 #endif
 
-#initSwiftExtension(cdecl: "gamecenter_init", types: [
+#initSwiftExtension(cdecl: "game_center_init", types: [
 	GameCenter.self,
 	GameCenterFriends.self,
 	GameCenterLeaderboards.self,
+	GameCenterAchievements.self,
+	GameCenterMatchmaking.self,
 	GameCenterPlayer.self,
 	GameCenterFriend.self,
+	LeaderboardPlayer.self,
 ])
 
+let OK:Int = 0
+let ERROR:Int = 1
+let ERROR_NOT_AVAILABLE: Int = 2
+let ERROR_FAILED_TO_AUTHENTICATE:Int = 3
+let ERROR_FAILED_TO_SUBMIT_SCORE:Int = 4
+let ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES:Int = 5
+let ERROR_ACCESSING_FRIENDS:Int = 6
+
 @Godot
-class GameCenter:Object
+class GameCenter:RefCounted
 {
 	#if os(iOS)
 	var viewController:UIGameCenterViewController = UIGameCenterViewController()
 	#endif
 	
-	var localPlayer:GameCenterPlayer?// = GameCenterPlayer()
-	var localPlayerListener:GameCenterListener = GameCenterListener()
-
-	// Called when user initializes this class
-	required init()
-	{
-		super.init()
-	}
-
-	// Called when godot initializes this class
-	required init(nativeHandle:UnsafeRawPointer)
-	{
-		super.init(nativeHandle: nativeHandle)
-	}
+	var localPlayer:GameCenterPlayer? = nil
 
 	@Callable
 	func authenticate(onComplete:Callable = Callable())
@@ -43,31 +41,34 @@ class GameCenter:Object
 		var params:GArray = GArray()
 
 		#if os(iOS)
-		if (GKLocalPlayer.local.isAuthenticated)
+		if (GKLocalPlayer.local.isAuthenticated && localPlayer != nil)
 		{
-			params.append(value: Variant(true))
-			params.append(value: Variant(localPlayer ?? GameCenterPlayer()))
+			params.append(value: Variant(OK))
+			params.append(value: Variant(localPlayer!))
 			onComplete.callv(arguments: params)
-			return
 		}
 
-		GKLocalPlayer.local.authenticateHandler = { viewController, error in
-			if (viewController != nil)
+		GKLocalPlayer.local.authenticateHandler = { loginController, error in
+			if let loginController = loginController
 			{
-				// Present the view controller so the player can log in
-				// TODO: Figure out how to get rootViewController
-				//self.view.window.rootViewController.presentViewController(viewController, animated:true, completion:nil)
+				do
+				{
+					// Present the view controller so the player can log in
+					try self.viewController.getRootController()?.present(loginController, animated: true, completion: nil)
+				}
+				catch
+				{
+					GD.pushError("Failed to present login window \(error)")
+				}
+
 				return
 			}
 
 			if (error != nil)
 			{
-				var error:String = error?.localizedDescription ?? ""
-				GD.pushWarning(error)
+				GD.pushError(error)
 				
-				var params:GArray = GArray()
-				params.append(value: Variant(false))
-				params.append(value: Variant(error))
+				params.append(value: Variant(ERROR_FAILED_TO_AUTHENTICATE))
 				onComplete.callv(arguments: params)
 				return
 			}
@@ -86,7 +87,7 @@ class GameCenter:Object
 			
 			self.localPlayer = player
 
-			params.append(value: Variant(true))
+			params.append(value: Variant(OK))
 			params.append(value: Variant(player))
 			onComplete.callv(arguments: params)
 
@@ -96,8 +97,7 @@ class GameCenter:Object
 		#else
 		GD.pushWarning("GameCenter not available on this platform")
 
-		params.append(value: Variant(false))
-		params.append(value: Variant("GameCenter not available on this platform"))
+		params.append(value: Variant(ERROR_NOT_AVAILABLE))
 		onComplete.callv(arguments: params)
 		#endif
 	}
@@ -113,17 +113,10 @@ class GameCenter:Object
 	}
 
 	@Callable
-	func getPlayer() -> GameCenterPlayer?
-	{
-		return localPlayer
-	}
-
-	@Callable
 	func showOverlay(onClose:Callable)
 	{
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(state: .dashboard), onClose: onClose)
-		//viewController.showDashboard(onClose: onClose)
 		#endif
 	}
 }

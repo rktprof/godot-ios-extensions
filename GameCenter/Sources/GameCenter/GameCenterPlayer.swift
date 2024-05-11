@@ -1,7 +1,7 @@
 import SwiftGodot
 
 @Godot
-class GameCenterPlayer:Object
+class GameCenterPlayer:RefCounted
 {
 	@Export
 	var alias:String = ""
