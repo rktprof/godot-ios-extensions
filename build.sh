@@ -25,120 +25,132 @@ if [[ ! $CONFIG ]]; then
 	CONFIG="release"
 fi
 
+
 BUILD_PATH=".build"
-CACHE_PATH=".cache"
+CACHE_PATH=".build"
 
 build_ios() {
-	echo "Building $1 iOS library..."
+	echo "Building iOS library..."
 
+	build_path="$1/.build/arm64-apple-ios"
+	cache_path="$1/.build"
+
+	# If you encounter build issues, try adding -skipMacroValidation
 	if (( $+commands[xcbeautify] )); then
 		xcodebuild \
 			-workspace "$1/" \
 			-scheme "$1" \
 			-destination 'generic/platform=iOS' \
-			-derivedDataPath "$BUILD_PATH" \
-			-clonedSourcePackagesDirPath "$CACHE_PATH" \
-			-configuration Release \
-			-skipPackagePluginValidation | xcbeautify
+			-derivedDataPath "$build_path" \
+			-clonedSourcePackagesDirPath "$cache_path" \
+			-configuration $2 \
+			-skipPackagePluginValidation -quiet | xcbeautify
 	else
 		xcodebuild \
 			-workspace "$1/" \
 			-scheme "$1" \
 			-destination 'generic/platform=iOS' \
-			-derivedDataPath "$BUILD_PATH" \
-			-clonedSourcePackagesDirPath "$CACHE_PATH" \
-			-configuration Release \
+			-derivedDataPath "$build_path" \
+			-clonedSourcePackagesDirPath "$cache_path" \
+			-configuration $2 \
 			-skipPackagePluginValidation -quiet
 	fi
 
 	echo "Copying iOS binaries"
-	productpath="$BUILD_PATH/Build/Products/$2-iphoneos/PackageFrameworks"
-	binarypath="bin/ios"
+	product_path="$build_path/Build/Products/$2-iphoneos/PackageFrameworks"
+	binary_path="bin/ios"
 	
-	if ! [[ -e "$binarypath" ]]; then
-		mkdir -p "$binarypath"
+	if ! [[ -e "$binary_path" ]]; then
+		mkdir -p "$binary_path"
 	fi
 
-	cp -af "$productpath/$1.framework" "$binarypath"
-	if ! [[ -e "$binarypath/SwiftGodot.framework" ]]; then
-		cp -af "$productpath/SwiftGodot.framework" "$binarypath"
+	cp -af "$product_path/$1.framework" "$binary_path"
+	if ! [[ -e "$binary_path/SwiftGodot.framework" ]]; then
+		cp -af "$product_path/SwiftGodot.framework" "$binary_path"
 	fi
 	
-	echo "Finished building $1"
+	echo "Finished building iOS library"
 }
 
 build_macos() {
-	echo "Building $1 macOS library..."
+	echo "Building macOS library..."
+
+	build_path="$1/.build"
+	cache_path="$1/.build"
 
 	if (( $+commands[xcbeautify] )); then
 		swift build \
 			--package-path $1 \
 			--configuration $2 \
-			--triple arm64-apple-macos \
-			--scratch-path $BUILD_PATH \
-			--cache-path $CACHE_PATH | xcbeautify
+			--triple arm64-apple-macosx \
+			--scratch-path "$build_path" \
+			--cache-path "$cache_path" | xcbeautify
 	else
 		swift build \
 			--package-path $1 \
 			--configuration $2 \
-			--triple arm64-apple-macos \
-			--scratch-path $BUILD_PATH \
-			--cache-path $CACHE_PATH
+			--triple arm64-apple-macosx \
+			--scratch-path "$build_path" \
+			--cache-path "$cache_path"
 	fi
 
 	echo "Copying macos binaries"
-	productpath="$BUILD_PATH/arm64-apple-macos/$2"
-	binarypath="bin/macos"
+	product_path="$build_path/arm64-apple-macosx/$2"
+	binary_path="bin/macos"
 
-	if ! [[ -e "$binarypath" ]]; then
-		mkdir -p "$binarypath"
+	if ! [[ -e "$binary_path" ]]; then
+		mkdir -p "$binary_path"
 	fi
 
-	cp "$productpath/lib$1.dylib" "$binarypath"
-	if ! [[ -e "$binarypath/libSwiftGodot.dylib" ]]; then
-		cp -af "$productpath/libSwiftGodot.dylib" "$binarypath"
+	cp "$product_path/lib$1.dylib" "$binary_path"
+	if ! [[ -e "$binary_path/libSwiftGodot.dylib" ]]; then
+		cp -af "$product_path/libSwiftGodot.dylib" "$binary_path"
 	fi
 
-	echo "Finished building $1"
+	echo "Finished building macOS library"
 }
 
+# Not sure if this works, create a .framework file but godot seems to complain
 build_macos_xcode() {
-	echo "Building $1 macOS library..."
+	echo "Building macOS library..."
 
+	build_path="$1/.build/arm64-apple-macosx"
+	cache_path="$1/.build"
+	
 	if (( $+commands[xcbeautify] )); then
 		xcodebuild \
 			-workspace "$1/" \
 			-scheme "$1" \
 			-destination 'generic/platform=macOS' \
-			-derivedDataPath "$BUILD_PATH" \
-			-clonedSourcePackagesDirPath "$CACHE_PATH" \
-			-configuration Release \
+			-derivedDataPath "$build_path" \
+			-clonedSourcePackagesDirPath "$cache_path" \
+			-configuration $2 \
 			-skipPackagePluginValidation | xcbeautify
 	else
 		xcodebuild \
 			-workspace "$1/" \
 			-scheme "$1" \
 			-destination 'generic/platform=macOS' \
-			-derivedDataPath "$BUILD_PATH" \
-			-clonedSourcePackagesDirPath "$CACHE_PATH" \
-			-configuration Release \
+			-derivedDataPath "$build_path" \
+			-clonedSourcePackagesDirPath "$cache_path" \
+			-configuration $2 \
 			-skipPackagePluginValidation -quiet
 	fi
 
 	echo "Copying binaries"
-	productpath="$BUILD_PATH/Build/Products/Release/PackageFrameworks"
-	binarypath="bin/macos"
+	product_path="$build_path/Build/Products/Release/PackageFrameworks"
+	binary_path="bin/macos"
 	
-	if ! [[ -e "$binarypath" ]]; then
-		mkdir -p "$binarypath"
+	if ! [[ -e "$binary_path" ]]; then
+		mkdir -p "$binary_path"
 	fi
 
-	cp -af "$productpath/$1.framework/Versions/Current/$1" "$binarypath"
-	if ! [[ -e "$binarypath/SwiftGodot.framework" ]]; then
-		cp -af "$productpath/SwiftGodot.framework" "$binarypath"
+	cp -af "$product_path/$1.framework/Versions/Current/$1" "$binary_path"
+	if ! [[ -e "$binary_path/SwiftGodot.framework" ]]; then
+		cp -af "$product_path/SwiftGodot.framework" "$binary_path"
 	fi
 
-	echo "Finished building $1"
+	echo "Finished building macOS library"
 }
 
 build_libs() {
@@ -150,6 +162,7 @@ build_libs() {
 	if [[ $2 == "all" || $2 == "ios" ]]; then
 		build_ios "$1" "$3"
 	fi
+	echo "$(tput bold)Finished building $1 $3 libraries for $2 platforms$(tput sgr0)"
 }
 
-build_libs "$PROJECT" $TARGET $CONFIG
+build_libs "$PROJECT" "$TARGET" "$CONFIG"
