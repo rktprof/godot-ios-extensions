@@ -12,14 +12,14 @@ class GameCenterLeaderboards:RefCounted
 	#endif
 
 	@Callable
-	func submitScore(score:Int, leaderboardID:String, onComplete:Callable)
+	func submitScore(score:Int, leaderboardIDs:[String], onComplete:Callable)
 	{
 		Task
 		{
 			var params:GArray = GArray()
 			do
 			{
-				try await GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: [leaderboardID])
+				try await GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: leaderboardIDs)
 				params.append(value: Variant(OK))
 				onComplete.callv(arguments: params)
 			}
