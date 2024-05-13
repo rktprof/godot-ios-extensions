@@ -16,6 +16,7 @@ import UIKit
 	GameCenterPlayer.self,
 	GameCenterFriend.self,
 	GameCenterLeaderboardPlayer.self,
+	GameCenterAchievement.self,
 ])
 
 let OK:Int = 0
