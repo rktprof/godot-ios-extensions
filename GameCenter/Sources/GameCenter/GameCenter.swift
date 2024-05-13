@@ -12,7 +12,6 @@ import UIKit
 	GameCenterFriends.self,
 	GameCenterLeaderboards.self,
 	GameCenterAchievements.self,
-	GameCenterMatchmaking.self,
 	GameCenterPlayer.self,
 	GameCenterFriend.self,
 	GameCenterLeaderboardPlayer.self,
