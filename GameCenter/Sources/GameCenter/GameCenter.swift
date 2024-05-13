@@ -119,4 +119,22 @@ class GameCenter:RefCounted
 		viewController.showUIController(GKGameCenterViewController(state: .dashboard), onClose: onClose)
 		#endif
 	}
+
+	@Callable
+	func showAccessPoint(showHighlights:Bool)
+	{
+		#if os(iOS)
+		GKAccessPoint.shared.location = .topTrailing
+		GKAccessPoint.shared.showHighlights = showHighlights
+		GKAccessPoint.shared.isActive = true
+		#endif
+	}
+
+	@Callable
+	func hideAccessPoint()
+	{
+		#if os(iOS)
+		GKAccessPoint.shared.isActive = false
+		#endif
+	}
 }
