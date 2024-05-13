@@ -50,43 +50,34 @@ class GameCenterLeaderboards:RefCounted
 
 	func loadLeaderboard(leaderboardID:String, scope:GKLeaderboard.PlayerScope, time:GKLeaderboard.TimeScope, range:NSRange, onComplete:Callable)
 	{
-		Task{
-			var players:GArray = GArray()
-			var result:GDictionary = GDictionary()
-			
-			let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
-			if let leaderboard: GKLeaderboard = leaderboards.first
+		Task
+		{
+			var params:GArray = GArray()
+			do
 			{
-				leaderboard.loadEntries(for: scope, timeScope: time, range: range)
-				{ (local:GKLeaderboard.Entry?, entries:[GKLeaderboard.Entry]?, count:Int, error: (any Error)?) in
-					DispatchQueue.main.async {
-						var params:GArray = GArray()
-
-						if error != nil
-						{
-							GD.pushWarning(error)
-
-							params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
-							onComplete.callv(arguments: params)
-							return
-						}
-
-						if let entries: [GKLeaderboard.Entry] = entries
-						{
-							for entry:GKLeaderboard.Entry in entries
-							{
-								var player:GameCenterLeaderboardPlayer = GameCenterLeaderboardPlayer()
-								player.displayName = entry.player.displayName
-								player.score = entry.score 
-								players.append(value: Variant(player))
-							}
-						}
-
-						params.append(value: Variant(OK))
-						params.append(value: Variant(players))
-						onComplete.callv(arguments: params)
+				let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				if let leaderboard: GKLeaderboard = leaderboards.first
+				{
+					let (local, entries, count) = try await leaderboard.loadEntries(for: scope, timeScope:time, range:range)
+					var players:GArray = GArray()
+					for entry:GKLeaderboard.Entry in entries
+					{
+						var player:GameCenterLeaderboardPlayer = GameCenterLeaderboardPlayer()
+						player.displayName = entry.player.displayName
+						player.score = entry.score 
+						players.append(value: Variant(player))
 					}
+
+					params.append(value: Variant(OK))
+					params.append(value: Variant(players))
+					onComplete.callv(arguments: params)
 				}
+			}
+			catch
+			{
+				GD.pushError("Failed to get leaderboard: \(error)")
+				params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
+				onComplete.callv(arguments: params)
 			}
 		}
 	}
