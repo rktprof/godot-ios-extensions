@@ -13,13 +13,16 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Friends
   - Get list of friends
   - Open Friends overlay
+- Achievements
+  - Reward achievements
+  - Open overlay
+  - Get achievement data
 
 **Bonjour (The Bonjour plugin should work on most platforms)**
-- LocalNetworkListener
-  - Start a server listening for connections on the local network
-- LocalNetworkDiscovery
-  - Start a browser to find servers created by LocalNetworkListener
-  - Resolve endpoint of discovered server
+- LAN discovery
+  - Listener
+  - Browser (find active listeners)
+  - Endpoint resolution
 
 **InAppPurchase**
 - Get list of products
@@ -27,9 +30,15 @@ Everything is provided as-is, I'm building new plugins as I need them
 
 ## Coming: (assuming I can figure it out)
 
+Basic plugin documentation
+
 **GameCenter**
-- Achievements
-  - Reward achievements
-  - Open overlay
-  - Get achievement data
 - Matchmaking
+- Friend invites
+- macOS Support (should mostly work but opening overlays doesn't)
+
+**Bonjour**
+- Bluetooth discovery
+
+**iCloud**
+- Cloud saves
