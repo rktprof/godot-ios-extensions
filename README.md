@@ -1,4 +1,4 @@
-Some swift based extensions for iOS functionality, built on [SwiftGodot](https://github.com/migueldeicaza/SwiftGodot).
+Some swift based extensions for iOS/macOS functionality, built on [SwiftGodot](https://github.com/migueldeicaza/SwiftGodot). 
 
 Everything is provided as-is, I'm building new plugins as I need them
 
@@ -18,7 +18,7 @@ Everything is provided as-is, I'm building new plugins as I need them
   - Open overlay
   - Get achievement data
 
-**Bonjour (The Bonjour plugin should work on most platforms)**
+**Bonjour**
 - LAN discovery
   - Listener
   - Browser (find active listeners)
