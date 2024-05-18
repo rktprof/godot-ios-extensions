@@ -34,18 +34,16 @@ class GameCenter:RefCounted
 	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 	
-	var localPlayer:GameCenterPlayer? = nil
-
 	@Callable
 	func authenticate(onComplete:Callable = Callable())
 	{
 		var params:GArray = GArray()
 
 		#if os(iOS)
-		if (GKLocalPlayer.local.isAuthenticated && localPlayer != nil)
+		if (GKLocalPlayer.local.isAuthenticated)
 		{
 			params.append(value: Variant(OK))
-			params.append(value: Variant(localPlayer!))
+			params.append(value: Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 			onComplete.callv(arguments: params)
 		}
 
@@ -54,8 +52,10 @@ class GameCenter:RefCounted
 			{
 				do
 				{
+					#if os(iOS)
 					// Present the view controller so the player can log in
 					try self.viewController.getRootController()?.present(loginController, animated: true, completion: nil)
+					#endif
 				}
 				catch
 				{
@@ -74,22 +74,8 @@ class GameCenter:RefCounted
 				return
 			}
 
-			// Player was successfully authenticated.
-			var player = GameCenterPlayer()
-			player.alias = GKLocalPlayer.local.alias
-			player.displayName = GKLocalPlayer.local.displayName
-			player.gamePlayerID = GKLocalPlayer.local.gamePlayerID
-			player.teamPlayerID = GKLocalPlayer.local.teamPlayerID
-			
-			// Check if there are any player restrictions
-			player.isUnderage = GKLocalPlayer.local.isUnderage
-			player.isMultiplayerGamingRestricted = GKLocalPlayer.local.isMultiplayerGamingRestricted
-			player.isPersonalizedCommunicationRestricted = GKLocalPlayer.local.isPersonalizedCommunicationRestricted
-			
-			self.localPlayer = player
-
 			params.append(value: Variant(OK))
-			params.append(value: Variant(player))
+			params.append(value: Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 			onComplete.callv(arguments: params)
 
 			return
@@ -111,6 +97,23 @@ class GameCenter:RefCounted
 		#else
 		return false
 		#endif
+	}
+
+	@Callable
+	func getPlayer(onComplete:Callable)
+	{
+		var params:GArray = GArray()
+		if (GKLocalPlayer.local.isAuthenticated)
+		{
+			params.append(value: Variant(OK))
+			params.append(value: Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+		}
+		else
+		{
+			params.append(value: Variant(NOT_AUTHENTICATED))
+		}
+		
+		onComplete.callv(arguments: params)
 	}
 
 	@Callable
@@ -138,6 +141,23 @@ class GameCenter:RefCounted
 		GKAccessPoint.shared.isActive = false
 		#endif
 	}
-}
 
-\ No newline at end of file
+	// Internal
+
+	func getGameCenterPlayer(localPlayer:GKLocalPlayer) -> GameCenterPlayer
+	{
+		// Player was successfully authenticated.
+		var player: GameCenterPlayer = GameCenterPlayer()
+		player.alias = localPlayer.alias
+		player.displayName = localPlayer.displayName
+		player.gamePlayerID = localPlayer.gamePlayerID
+		player.teamPlayerID = localPlayer.teamPlayerID
+			
+		// Check if there are any player restrictions
+		player.isUnderage = localPlayer.isUnderage
+		player.isMultiplayerGamingRestricted = localPlayer.isMultiplayerGamingRestricted
+		player.isPersonalizedCommunicationRestricted = localPlayer.isPersonalizedCommunicationRestricted
+
+		return player
+	}
+}
