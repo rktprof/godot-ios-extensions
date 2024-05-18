@@ -59,17 +59,44 @@ class GameCenterLeaderboards:RefCounted
 				if let leaderboard: GKLeaderboard = leaderboards.first
 				{
 					let (local, entries, count) = try await leaderboard.loadEntries(for: scope, timeScope:time, range:range)
+					params.append(value: Variant(OK))
+
+					// Add the local player
+					if let local: GKLeaderboard.Entry
+					{
+						var localPlayer:GameCenterLeaderboardPlayer = GameCenterLeaderboardPlayer()
+						localPlayer.rank = local.rank
+						localPlayer.displayName = local.player.displayName
+						localPlayer.score = local.score
+						localPlayer.formattedScore = local.formattedScore
+						localPlayer.date = local.date.timeIntervalSince1970
+						
+						params.append(value: Variant(localPlayer))
+					}
+					else
+					{
+						// Need to keep the signature consistent for godot to accept the function call
+						params.append(value: Variant())
+					}
+
+					// Get all the players in range
 					var players:GArray = GArray()
 					for entry:GKLeaderboard.Entry in entries
 					{
 						var player:GameCenterLeaderboardPlayer = GameCenterLeaderboardPlayer()
+						player.rank = entry.rank
 						player.displayName = entry.player.displayName
-						player.score = entry.score 
+						player.score = entry.score
+						player.formattedScore = entry.formattedScore
+						player.date = entry.date.timeIntervalSince1970
+
 						players.append(value: Variant(player))
 					}
-
-					params.append(value: Variant(OK))
 					params.append(value: Variant(players))
+
+					// How many players, in total, are in the leaderboard
+					params.append(value: Variant(count))
+	
 					onComplete.callv(arguments: params)
 				}
 			}
