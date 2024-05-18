@@ -42,3 +42,7 @@ Basic plugin documentation
 
 **iCloud**
 - Cloud saves
+
+**Device**
+- Gyroscope
+- Taptic Engine
