@@ -3,7 +3,7 @@ import SwiftGodot
 import GameKit
 import UIKit
 
-class UIGameCenterViewController: UIViewController, GKGameCenterControllerDelegate
+class GameCenterViewController: UIViewController, GKGameCenterControllerDelegate
 {
 	var onControllerClosed:Callable? = nil
 

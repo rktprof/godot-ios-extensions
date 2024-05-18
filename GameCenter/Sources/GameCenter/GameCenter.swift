@@ -30,7 +30,7 @@ let ERROR_ACCESSING_FRIENDS:Int = 6
 class GameCenter:RefCounted
 {
 	#if os(iOS)
-	var viewController:UIGameCenterViewController = UIGameCenterViewController()
+	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 	
 	var localPlayer:GameCenterPlayer? = nil
@@ -138,3 +138,5 @@ class GameCenter:RefCounted
 		#endif
 	}
 }
+
+\ No newline at end of file

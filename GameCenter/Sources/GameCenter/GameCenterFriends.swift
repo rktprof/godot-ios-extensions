@@ -13,7 +13,7 @@ class GameCenterFriends:RefCounted
 	let AUTHORIZATION_RESTRICTED:Int = 3
 
 	#if os(iOS)
-	var viewController:UIGameCenterViewController = UIGameCenterViewController()
+	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 
 	@Callable

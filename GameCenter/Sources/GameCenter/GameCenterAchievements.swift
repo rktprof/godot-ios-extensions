@@ -9,7 +9,7 @@ import UIKit
 class GameCenterAchievements:RefCounted
 {
 	#if os(iOS)
-	var viewController:UIGameCenterViewController = UIGameCenterViewController()
+	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 
 	let OK:Int = 0

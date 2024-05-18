@@ -8,7 +8,7 @@ import UIKit
 class GameCenterLeaderboards:RefCounted
 {
 	#if os(iOS)
-	var viewController:UIGameCenterViewController = UIGameCenterViewController()
+	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 
 	@Callable
