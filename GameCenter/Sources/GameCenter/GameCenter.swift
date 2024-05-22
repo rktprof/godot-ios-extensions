@@ -11,10 +11,10 @@ import UIKit
 	GameCenter.self,
 	GameCenterFriends.self,
 	GameCenterLeaderboards.self,
+	GameCenterLeaderboardEntry.self,
 	GameCenterAchievements.self,
 	GameCenterPlayer.self,
 	GameCenterFriend.self,
-	GameCenterLeaderboardPlayer.self,
 	GameCenterAchievement.self,
 ])
 
