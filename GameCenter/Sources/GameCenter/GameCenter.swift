@@ -100,7 +100,7 @@ class GameCenter:RefCounted
 	}
 
 	@Callable
-	func getPlayer(onComplete:Callable)
+	func getLocalPlayer(onComplete:Callable)
 	{
 		var params:GArray = GArray()
 		if (GKLocalPlayer.local.isAuthenticated)
