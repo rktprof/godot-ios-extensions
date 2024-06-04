@@ -4,13 +4,17 @@ import Network
 @Godot
 class LocalNetworkDiscovery:RefCounted
 {
+	let OK:Int = 0
+	let ERROR:Int = 1
+	let INCOMPATIBLE_IPV6_ADDRESS:Int = 2
+
 	#signal("device_discovered", arguments: ["name": String.self, "port": Int.self, "hash_value": Int.self])
 	#signal("device_lost", arguments: ["name": String.self, "hash_value": Int.self])
-	#signal("device_updated", arguments: ["name": String.self, "old_hash_value":Int.self, "new_hash_value": Int.self])
+	#signal("device_updated", arguments: ["name": String.self, "port":Int.self, "old_hash_value":Int.self, "new_hash_value": Int.self])
 
 	var browser:NWBrowser? = nil
 	var connection:NWConnection? = nil
-	var discoveredDevices: [Int: NWEndpoint] = [:]
+	var discoveredDevices: [Int: (NWBrowser.Result)] = [:]
 
 	deinit
 	{
@@ -34,72 +38,95 @@ class LocalNetworkDiscovery:RefCounted
 	@Callable
 	func stop()
 	{
+		if browser == nil {
+			return
+		}
+
 		browser?.stateUpdateHandler = nil
 		browser?.browseResultsChangedHandler = nil
 		browser?.cancel()
+		browser = nil
 		GD.print("LocalNetworkDiscovery stopped")
 	}
 
 	@Callable
-	func resolveEndpoint(hashValue:Int, port:Int, onComplete:Callable)
+	func resolveEndpoint(hashValue:Int, onComplete:Callable)
 	{
 		// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
-		if let endpoint: NWEndpoint = discoveredDevices[hashValue]
+		var params:GArray = GArray()
+		if let result: NWBrowser.Result = discoveredDevices[hashValue]
 		{
-			GD.print("Resolving endpoint \(endpoint)...")
-			let params: NWParameters = NWParameters.tcp
-			params.prohibitedInterfaceTypes = [.loopback]
-			params.serviceClass = NWParameters.ServiceClass.responsiveData
+			let endpoint: NWEndpoint = result.endpoint
+			var port:Int = 0
+			switch result.metadata
+			{
+				case .bonjour(let record):
+					port = Int(record.dictionary["port"] ?? "0") ?? 0
+				default:
+					break
+			}
+
+			//GD.print("Resolving endpoint \(endpoint)...")
+			let networkParams: NWParameters = NWParameters.tcp
+			networkParams.prohibitedInterfaceTypes = [.loopback]
+			networkParams.serviceClass = NWParameters.ServiceClass.responsiveData
 			
-			let ip: NWProtocolIP.Options = params.defaultProtocolStack.internetProtocol! as! NWProtocolIP.Options
+			let ip: NWProtocolIP.Options = networkParams.defaultProtocolStack.internetProtocol! as! NWProtocolIP.Options
 			ip.version = .v4
 
-			connection = NWConnection(to: endpoint, using: params)
+			connection = NWConnection(to: endpoint, using: networkParams)
 			connection?.stateUpdateHandler = { state in
 				switch state
 				{
 					case .ready:
 						if let innerEndpoint: NWEndpoint = self.connection?.currentPath?.remoteEndpoint,
 						case .hostPort(let host, let tempPort) = innerEndpoint {
-							GD.print("Resolving... Success (\(host):\(tempPort))")
 							self.connection?.cancel()
 
-							var hostName:String = ""
+							var address_string:String = ""
 							switch host
 							{
 								case .ipv4(let address):
-									hostName = self.ipAddressToString(address)
+									address_string = self.ipAddressToString(address)
 									break;
 								case .ipv6(let address):
 									if let ipv4Address = address.asIPv4
 									{
-										hostName = self.ipAddressToString(ipv4Address)
+										address_string = self.ipAddressToString(ipv4Address)
 									}
 									else
 									{
-										GD.pushError("Resolving... Failed: Got incompatible IPv6 address")
+										GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
+										params.append(value:Variant(self.INCOMPATIBLE_IPV6_ADDRESS))
+										params.append(value:Variant())
+										params.append(value:Variant())
+										onComplete.callv(arguments: params)
 									}
 								default:
 									break;
 
 							}
 
-							var params:GArray = GArray()
-							params.append(value:Variant(hostName))
+							//GD.print("Successfully resolved endpoint \(address_string):\(port)")
+
+							params.append(value:Variant(self.OK))
+							params.append(value:Variant(address_string))
 							params.append(value:Variant(port))
 							onComplete.callv(arguments: params)
 						}
 					default:
-						GD.print("Resolving... (\(state))")
 						break
 				}
 			}
 			connection?.start(queue: DispatchQueue.global(qos: .userInteractive))
-			//connection?.start(queue: .global())
 		}
 		else
 		{
 			GD.pushError("Found no endpoint corresponding to the hashValue \(hashValue)")
+			params.append(value:Variant(self.ERROR))
+			params.append(value:Variant())
+			params.append(value:Variant())
+			onComplete.callv(arguments: params)
 		}
 	}
 
@@ -140,7 +167,7 @@ class LocalNetworkDiscovery:RefCounted
 							break
 					}
 
-					discoveredDevices[result.hashValue] = result.endpoint
+					discoveredDevices[result.hashValue] = result
 
 				case .removed(let result):
 					GD.print("LocalNetworkDiscovery lost server \(result.endpoint.debugDescription), Meta: \(result.metadata) (\(result.hashValue))")
@@ -156,17 +183,25 @@ class LocalNetworkDiscovery:RefCounted
 
 				case .changed(old: let old, new: let new, flags: _):
 					GD.print("LocalNetworkDiscovery server changed \(old.endpoint) -> \(new.endpoint)")
-
-					discoveredDevices.removeValue(forKey: old.hashValue)
-					discoveredDevices[new.hashValue] = new.endpoint
+					var server_port:Int = 0
+					switch new.metadata
+					{
+						case .bonjour(let record):
+							server_port = Int(record.dictionary["port"] ?? "0") ?? 0
+						default:
+							break
+					}
 
 					switch new.endpoint
 					{
 						case .service(let service):
-							emit(signal: LocalNetworkDiscovery.deviceUpdated, service.name, old.hashValue, new.hashValue)
+							emit(signal: LocalNetworkDiscovery.deviceUpdated, service.name, server_port, old.hashValue, new.hashValue)
 						default:
 							break
 					}
+
+					discoveredDevices.removeValue(forKey: old.hashValue)
+					discoveredDevices[new.hashValue] = new
 				case .identical:
 					break
 			}
