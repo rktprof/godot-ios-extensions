@@ -17,6 +17,7 @@ Everything is provided as-is, I'm building new plugins as I need them
   - Reward achievements
   - Open overlay
   - Get achievement data
+- Matchmaking
 
 **Bonjour**
 - LAN discovery
@@ -33,7 +34,6 @@ Everything is provided as-is, I'm building new plugins as I need them
 Basic plugin documentation
 
 **GameCenter**
-- Matchmaking
 - Friend invites
 - macOS Support (should mostly work but opening overlays doesn't)
 
