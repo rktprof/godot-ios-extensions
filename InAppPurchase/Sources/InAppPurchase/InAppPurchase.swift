@@ -83,17 +83,17 @@ class InAppPurchase:RefCounted
 							let transaction: Transaction = try checkVerified(verification)
 							await transaction.finish()
 
-							params.append(value: Variant(OK))
+							params.append(Variant(OK))
 							onComplete.callv(arguments: params)
 							break
 						case .pending:
 							// Transaction waiting on authentication or approval
-							params.append(value: Variant(PURCHASE_PENDING_AUTHORIZATION))
+							params.append(Variant(PURCHASE_PENDING_AUTHORIZATION))
 							onComplete.callv(arguments: params)
 							break
 						case .userCancelled:
 							// User cancelled the purchase
-							params.append(value: Variant(PURCHASE_CANCELLED_BY_USER))
+							params.append(Variant(PURCHASE_CANCELLED_BY_USER))
 							onComplete.callv(arguments: params)
 							break;
 					}
@@ -102,7 +102,7 @@ class InAppPurchase:RefCounted
 			catch
 			{
 				GD.pushError("Failed to get products from App Store, error: \(error)")
-				params.append(value: Variant(PURCHASE_FAILED))
+				params.append(Variant(PURCHASE_FAILED))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -146,15 +146,15 @@ class InAppPurchase:RefCounted
 							product.type = IAPProduct.TYPE_UNKNOWN
 					}
 					
-					params.append(value:Variant(OK))
-					params.append(value:Variant(products))
+					params.append(Variant(OK))
+					params.append(Variant(products))
 					onComplete.callv(arguments: params)
 				}
 			}
 			catch
 			{
 				GD.pushError("Failed to get products from App Store, error: \(error)")
-				params.append(value: Variant(FAILED_TO_GET_PRODUCTS))
+				params.append(Variant(FAILED_TO_GET_PRODUCTS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -169,13 +169,13 @@ class InAppPurchase:RefCounted
 			do
 			{
 				try await AppStore.sync()
-				params.append(value:Variant(OK))
+				params.append(Variant(OK))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
 				GD.pushError("Failed to restore purchases: \(error)")
-				params.append(value:Variant(ERROR))
+				params.append(Variant(ERROR))
 				onComplete.callv(arguments: params)
 			}
 		}

@@ -43,8 +43,8 @@ class GameCenter:RefCounted
 		#if os(iOS)
 		if (GKLocalPlayer.local.isAuthenticated)
 		{
-			params.append(value: Variant(OK))
-			params.append(value: Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			params.append(Variant(OK))
+			params.append(Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 			onComplete.callv(arguments: params)
 		}
 
@@ -70,13 +70,17 @@ class GameCenter:RefCounted
 			{
 				GD.pushError(error)
 				
-				params.append(value: Variant(ERROR_FAILED_TO_AUTHENTICATE))
+				params.append(Variant(ERROR_FAILED_TO_AUTHENTICATE))
 				onComplete.callv(arguments: params)
 				return
 			}
 
-			params.append(value: Variant(OK))
-			params.append(value: Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			if (self.delegate != nil) {
+				GKLocalPlayer.local.register(self.delegate!)
+			}
+
+			params.append(Variant(OK))
+			params.append(Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 			onComplete.callv(arguments: params)
 
 			return
@@ -85,7 +89,7 @@ class GameCenter:RefCounted
 		#else
 		GD.pushWarning("GameCenter not available on this platform")
 
-		params.append(value: Variant(ERROR_NOT_AVAILABLE))
+		params.append(Variant(ERROR_NOT_AVAILABLE))
 		onComplete.callv(arguments: params)
 		#endif
 	}
@@ -106,12 +110,12 @@ class GameCenter:RefCounted
 		var params:GArray = GArray()
 		if (GKLocalPlayer.local.isAuthenticated)
 		{
-			params.append(value: Variant(OK))
-			params.append(value: Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			params.append(Variant(OK))
+			params.append(Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 		}
 		else
 		{
-			params.append(value: Variant(NOT_AUTHENTICATED))
+			params.append(Variant(NOT_AUTHENTICATED))
 		}
 		
 		onComplete.callv(arguments: params)

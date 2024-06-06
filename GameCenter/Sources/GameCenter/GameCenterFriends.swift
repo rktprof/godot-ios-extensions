@@ -34,16 +34,16 @@ class GameCenterFriends:RefCounted
 					player.teamPlayerID = friend.teamPlayerID
 					player.isInvitable = friend.isInvitable
 
-					players.append(value: Variant(player))
+					players.append(Variant(player))
 				}
 
-				params.append(value: Variant(OK))
-				params.append(value: Variant(players))
+				params.append(Variant(OK))
+				params.append(Variant(players))
 				onComplete.callv(arguments: params)
 
 			} catch {
 				GD.pushError("Error getting friends: \(error).")
-				params.append(value:Variant(ERROR_ACCESSING_FRIENDS))
+				params.append(Variant(ERROR_ACCESSING_FRIENDS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -73,17 +73,17 @@ class GameCenterFriends:RefCounted
 		{
 			GKLocalPlayer.local.loadFriendsAuthorizationStatus() 
 			{ (status: GKFriendsAuthorizationStatus, error: (any Error)?) in
-				params.append(value:Variant(OK))
+				params.append(Variant(OK))
 				switch status
 				{
 					case .notDetermined:
-						params.append(value:Variant(self.AUTHORIZATION_NOT_DETERMINED))
+						params.append(Variant(self.AUTHORIZATION_NOT_DETERMINED))
 					case .authorized:
-						params.append(value:Variant(self.AUTHORIZATION_AUTHORIZED))
+						params.append(Variant(self.AUTHORIZATION_AUTHORIZED))
 					case .denied:
-						params.append(value:Variant(self.AUTHORIZATION_DENIED))
+						params.append(Variant(self.AUTHORIZATION_DENIED))
 					case .restricted:
-						params.append(value:Variant(self.AUTHORIZATION_RESTRICTED))
+						params.append(Variant(self.AUTHORIZATION_RESTRICTED))
 				}
 
 				onComplete.callv(arguments: params)
@@ -93,7 +93,7 @@ class GameCenterFriends:RefCounted
 		{
 			GD.pushError("Error accessing friends: \(error).")
 
-			params.append(value:Variant(ERROR_ACCESSING_FRIENDS))
+			params.append(Variant(ERROR_ACCESSING_FRIENDS))
 			onComplete.callv(arguments: params)
 		}
 	}

@@ -20,13 +20,13 @@ class GameCenterLeaderboards:RefCounted
 			do
 			{
 				try await GKLeaderboard.submitScore(score, context: 0, player: GKLocalPlayer.local, leaderboardIDs: leaderboardIDs)
-				params.append(value: Variant(OK))
+				params.append(Variant(OK))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
 				GD.pushError("Error submitting score: \(error).")
-				params.append(value:Variant(ERROR_FAILED_TO_SUBMIT_SCORE))
+				params.append(Variant(ERROR_FAILED_TO_SUBMIT_SCORE))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -103,32 +103,32 @@ class GameCenterLeaderboards:RefCounted
 				if let leaderboard: GKLeaderboard = leaderboards.first
 				{
 					let (local, entries, count) = try await leaderboard.loadEntries(for: scope, timeScope:time, range:range)
-					params.append(value: Variant(OK))
+					params.append(Variant(OK))
 
 					// Add the local player
 					if let local: GKLeaderboard.Entry {	
-						params.append(value: Variant(GameCenterLeaderboardEntry(local)))
+						params.append(Variant(GameCenterLeaderboardEntry(local)))
 					} else {
 						// Need to keep the signature consistent for godot to accept the function call
-						params.append(value: Variant())
+						params.append(Variant())
 					}
 
 					// Get all the players in range
 					var players:GArray = GArray()
 					for entry:GKLeaderboard.Entry in entries {
-						players.append(value: Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry)))
 					}
-					params.append(value: Variant(players))
+					params.append(Variant(players))
 
 					// How many players, in total, are in the leaderboard
-					params.append(value: Variant(count))
+					params.append(Variant(count))
 					onComplete.callv(arguments: params)
 				}
 			}
 			catch
 			{
 				GD.pushError("Failed to get leaderboard: \(error)")
-				params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
+				params.append(Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -145,32 +145,32 @@ class GameCenterLeaderboards:RefCounted
 				if let leaderboard: GKLeaderboard = try await leaderboards.first?.loadPreviousOccurrence()
 				{	
 					let (local, entries, count) = try await leaderboard.loadEntries(for: scope, timeScope:time, range:range)
-					params.append(value: Variant(OK))
+					params.append(Variant(OK))
 
 					// Add the local player
 					if let local: GKLeaderboard.Entry {
-						params.append(value: Variant(GameCenterLeaderboardEntry(local)))
+						params.append(Variant(GameCenterLeaderboardEntry(local)))
 					} else {
 						// Need to keep the signature consistent for godot to accept the function call
-						params.append(value: Variant())
+						params.append(Variant())
 					}
 
 					// Get all the players in range
 					var players:GArray = GArray()
 					for entry:GKLeaderboard.Entry in entries {
-						players.append(value: Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry)))
 					}
-					params.append(value: Variant(players))
+					params.append(Variant(players))
 
 					// How many players, in total, are in the leaderboard
-					params.append(value: Variant(count))
+					params.append(Variant(count))
 					onComplete.callv(arguments: params)
 				}
 			}
 			catch
 			{
 				GD.pushError("Failed to get leaderboard: \(error)")
-				params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
+				params.append(Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -187,21 +187,21 @@ class GameCenterLeaderboards:RefCounted
 				if let leaderboard: GKLeaderboard = leaderboards.first
 				{
 					let (local, entries) = try await leaderboard.loadEntries(for: [GKLocalPlayer.local], timeScope:time)
-					params.append(value: Variant(OK))
+					params.append(Variant(OK))
 
 					if let local: GKLeaderboard.Entry {
-						params.append(value: Variant(GameCenterLeaderboardEntry(local)))
+						params.append(Variant(GameCenterLeaderboardEntry(local)))
 					} else {
 						// Need to keep the signature consistent for godot to accept the function call
-						params.append(value: Variant())
+						params.append(Variant())
 					}
 
 					// Get all the players in range
 					var players:GArray = GArray()
 					for entry:GKLeaderboard.Entry in entries {
-						players.append(value: Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry)))
 					}
-					params.append(value: Variant(players))
+					params.append(Variant(players))
 
 					onComplete.callv(arguments: params)
 				}
@@ -209,7 +209,7 @@ class GameCenterLeaderboards:RefCounted
 			catch
 			{
 				GD.pushError("Failed to get leaderboard score for player: \(error)")
-				params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
+				params.append(Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -226,21 +226,21 @@ class GameCenterLeaderboards:RefCounted
 				if let leaderboard: GKLeaderboard = try await leaderboards.first?.loadPreviousOccurrence()
 				{
 					let (local, entries) = try await leaderboard.loadEntries(for: [GKLocalPlayer.local], timeScope:time)
-					params.append(value: Variant(OK))
+					params.append(Variant(OK))
 
 					if let local: GKLeaderboard.Entry {
-						params.append(value: Variant(GameCenterLeaderboardEntry(local)))
+						params.append(Variant(GameCenterLeaderboardEntry(local)))
 					} else {
 						// Need to keep the signature consistent for godot to accept the function call
-						params.append(value: Variant())
+						params.append(Variant())
 					}
 
 					// Get all the players in range
 					var players:GArray = GArray()
 					for entry:GKLeaderboard.Entry in entries {
-						players.append(value: Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry)))
 					}
-					params.append(value: Variant(players))
+					params.append(Variant(players))
 					
 					onComplete.callv(arguments: params)
 				}
@@ -248,7 +248,7 @@ class GameCenterLeaderboards:RefCounted
 			catch
 			{
 				GD.pushError("Failed to get leaderboard score for player: \(error)")
-				params.append(value: Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
+				params.append(Variant(ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES))
 				onComplete.callv(arguments: params)
 			}
 		}

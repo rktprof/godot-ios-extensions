@@ -97,9 +97,9 @@ class LocalNetworkDiscovery:RefCounted
 									else
 									{
 										GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
-										params.append(value:Variant(self.INCOMPATIBLE_IPV6_ADDRESS))
-										params.append(value:Variant())
-										params.append(value:Variant())
+										params.append(Variant(self.INCOMPATIBLE_IPV6_ADDRESS))
+										params.append(Variant())
+										params.append(Variant())
 										onComplete.callv(arguments: params)
 									}
 								default:
@@ -109,9 +109,9 @@ class LocalNetworkDiscovery:RefCounted
 
 							//GD.print("Successfully resolved endpoint \(address_string):\(port)")
 
-							params.append(value:Variant(self.OK))
-							params.append(value:Variant(address_string))
-							params.append(value:Variant(port))
+							params.append(Variant(self.OK))
+							params.append(Variant(address_string))
+							params.append(Variant(port))
 							onComplete.callv(arguments: params)
 						}
 					default:
@@ -123,9 +123,9 @@ class LocalNetworkDiscovery:RefCounted
 		else
 		{
 			GD.pushError("Found no endpoint corresponding to the hashValue \(hashValue)")
-			params.append(value:Variant(self.ERROR))
-			params.append(value:Variant())
-			params.append(value:Variant())
+			params.append(Variant(self.ERROR))
+			params.append(Variant())
+			params.append(Variant())
 			onComplete.callv(arguments: params)
 		}
 	}

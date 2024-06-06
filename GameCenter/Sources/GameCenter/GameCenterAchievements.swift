@@ -50,13 +50,13 @@ class GameCenterAchievements:RefCounted
 
 				achievement?.percentComplete = achievementProgress
 				
-				params.append(value: Variant(OK))
+				params.append(Variant(OK))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
 				GD.pushError("Failed to set achievement progress: \(error)")
-				params.append(value: Variant(FAILED_TO_SET_PROGRESS))
+				params.append(Variant(FAILED_TO_SET_PROGRESS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -85,14 +85,14 @@ class GameCenterAchievements:RefCounted
 					achievements.append(achievement!)
 				}
 
-				params.append(value: Variant(OK))
-				params.append(value: Variant(achievement?.percentComplete ?? 0))
+				params.append(Variant(OK))
+				params.append(Variant(achievement?.percentComplete ?? 0))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
 				GD.pushError("Failed to get achievement progress: \(error)")
-				params.append(value: Variant(FAILED_TO_LOAD_PROGRESS))
+				params.append(Variant(FAILED_TO_LOAD_PROGRESS))
 				onComplete.callv(arguments: params)
 			}
 		}	
@@ -113,7 +113,7 @@ class GameCenterAchievements:RefCounted
 
 				if (!hasLoadedAchievements)
 				{
-					params.append(value: Variant(NOTHING_TO_REPORT))
+					params.append(Variant(NOTHING_TO_REPORT))
 					onComplete.callv(arguments: params)
 					return
 				}
@@ -123,7 +123,7 @@ class GameCenterAchievements:RefCounted
 			catch
 			{
 				GD.pushError("Failed to report achievment progress: \(error)")
-				params.append(value: Variant(FAILED_TO_REPORT_PROGRESS))
+				params.append(Variant(FAILED_TO_REPORT_PROGRESS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -170,17 +170,17 @@ class GameCenterAchievements:RefCounted
 						achievement.isCompleted = completion.isCompleted
 					}
 
-					result.append(value: Variant(achievement))
+					result.append(Variant(achievement))
 				}
 
-				params.append(value: Variant(OK))
-				params.append(value: Variant(result))
+				params.append(Variant(OK))
+				params.append(Variant(result))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
 				GD.pushError("Failed to get achievements: \(error)")
-				params.append(value: Variant(FAILED_TO_LOAD_ACHIEVEMENTS))
+				params.append(Variant(FAILED_TO_LOAD_ACHIEVEMENTS))
 				onComplete.callv(arguments: params)
 			}
 		}
@@ -195,12 +195,12 @@ class GameCenterAchievements:RefCounted
 			do
 			{
 				try await GKAchievement.resetAchievements()
-				params.append(value: Variant(OK))
+				params.append(Variant(OK))
 				onComplete.callv(arguments: params)
 			}
 			catch
 			{
-				params.append(value: Variant(FAILED_TO_RESET_ACHIEVEMENTS))
+				params.append(Variant(FAILED_TO_RESET_ACHIEVEMENTS))
 				onComplete.callv(arguments: params)
 			}
 		}

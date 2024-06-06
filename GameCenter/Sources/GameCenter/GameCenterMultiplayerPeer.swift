@@ -147,16 +147,16 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 					GD.pushError("Failed to get matchmaking activity. Error \(error!)")
 
 					var params:GArray = GArray()
-					params.append(value: Variant(1))
-					params.append(value: Variant(0))
+					params.append(Variant(1))
+					params.append(Variant(0))
 					onComplete.callv(arguments: params)
 
 					return
 				}
 			
 				var params:GArray = GArray()
-				params.append(value: Variant(0))
-				params.append(value: Variant(players))
+				params.append(Variant(0))
+				params.append(Variant(players))
 				onComplete.callv(arguments: params)
 			}
 		}
