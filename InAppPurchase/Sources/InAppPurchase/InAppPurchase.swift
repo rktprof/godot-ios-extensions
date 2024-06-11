@@ -4,7 +4,7 @@
 import SwiftGodot
 import StoreKit
 
-#initSwiftExtension(cdecl: "in_app_purchase_init", types: [
+#initSwiftExtension(cdecl: "swift_entry_point", types: [
 	InAppPurchase.self,
 	IAPProduct.self
 ])

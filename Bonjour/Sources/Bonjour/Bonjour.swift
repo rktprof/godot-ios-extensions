@@ -3,7 +3,7 @@
 
 import SwiftGodot
 
-#initSwiftExtension(cdecl: "bonjour_init", types: [
+#initSwiftExtension(cdecl: "swift_entry_point", types: [
 	LocalNetworkListener.self,
 	LocalNetworkDiscovery.self,
 ])

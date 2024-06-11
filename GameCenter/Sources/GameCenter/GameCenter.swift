@@ -7,11 +7,10 @@ import GameKit
 import UIKit
 #endif
 
-#initSwiftExtension(cdecl: "game_center_init", types: [
+#initSwiftExtension(cdecl: "swift_entry_point", types: [
 	GameCenter.self,
 	GameCenterFriends.self,
 	GameCenterLeaderboards.self,
-	GameCenterLeaderboardEntry.self,
 	GameCenterAchievements.self,
 	GameCenterPlayer.self,
 	GameCenterFriend.self,
