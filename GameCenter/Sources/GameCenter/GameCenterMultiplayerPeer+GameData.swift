@@ -3,22 +3,11 @@ import SwiftGodot
 import GameKit
 
 struct DataPacket:Codable {
-	//var peerID: Int32?
 	var peerData: PeerData?
 	var bytes: [UInt8]?
 }
 
 extension GameCenterMultiplayerPeer {
-	// func encode(peerID: Int32) -> Data? {
-	// 	let data: DataPacket = DataPacket(peerID:peerID)
-	// 	return encode(dataPacket:data)
-	// }
-
-	// func encode(initiative:UInt32) -> Data? {
-	// 	let data:DataPacket = DataPacket(initiative:initiative)
-	// 	return encode(dataPacket: data)
-	// }
-
 	func encode(peerData:PeerData) -> Data? {
 		let data:DataPacket = DataPacket(peerData: peerData)
 		return encode(dataPacket: data)
