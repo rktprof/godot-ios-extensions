@@ -9,11 +9,12 @@ import UIKit
 
 #initSwiftExtension(cdecl: "swift_entry_point", types: [
 	GameCenter.self,
-	GameCenterFriends.self,
-	GameCenterLeaderboards.self,
-	GameCenterAchievements.self,
 	GameCenterPlayer.self,
+	GameCenterFriends.self,
 	GameCenterFriend.self,
+	GameCenterLeaderboards.self,
+	GameCenterLeaderboardEntry.self,
+	GameCenterAchievements.self,
 	GameCenterAchievement.self,
 	GameCenterMultiplayerPeer.self,
 ])
@@ -23,9 +24,18 @@ let ERROR:Int = 1
 let NOT_AUTHENTICATED:Int = 2
 let ERROR_NOT_AVAILABLE: Int = 3
 let ERROR_FAILED_TO_AUTHENTICATE:Int = 4
-let ERROR_FAILED_TO_SUBMIT_SCORE:Int = 5
-let ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES:Int = 6
-let ERROR_ACCESSING_FRIENDS:Int = 7
+
+let ERROR_ACCESSING_FRIENDS:Int = 6
+
+let ERROR_FAILED_TO_SUBMIT_SCORE:Int = 7
+let ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES:Int = 8
+
+let FAILED_TO_LOAD_ACHIEVEMENTS:Int = 9
+let FAILED_TO_RESET_ACHIEVEMENTS:Int = 10
+let FAILED_TO_SET_PROGRESS:Int = 11
+let FAILED_TO_LOAD_PROGRESS:Int = 12
+let FAILED_TO_REPORT_PROGRESS:Int = 13
+let NOTHING_TO_REPORT:Int = 14
 
 @Godot
 class GameCenter:RefCounted
@@ -37,14 +47,11 @@ class GameCenter:RefCounted
 	@Callable
 	func authenticate(onComplete:Callable = Callable())
 	{
-		var params:GArray = GArray()
-
 		#if os(iOS)
 		if (GKLocalPlayer.local.isAuthenticated)
 		{
-			params.append(Variant(OK))
-			params.append(Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
-			onComplete.callv(arguments: params)
+			onComplete.call(Variant(OK), Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			return
 		}
 
 		GKLocalPlayer.local.authenticateHandler = { loginController, error in
@@ -68,9 +75,7 @@ class GameCenter:RefCounted
 			if (error != nil)
 			{
 				GD.pushError(error)
-				
-				params.append(Variant(ERROR_FAILED_TO_AUTHENTICATE))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(ERROR_FAILED_TO_AUTHENTICATE), Variant())
 				return
 			}
 
@@ -78,18 +83,13 @@ class GameCenter:RefCounted
 				GKLocalPlayer.local.register(self.delegate!)
 			}
 
-			params.append(Variant(OK))
-			params.append(Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
-			onComplete.callv(arguments: params)
-
-			return
+			onComplete.callDeferred(Variant(OK), Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 		}
 
 		#else
 		GD.pushWarning("GameCenter not available on this platform")
 
-		params.append(Variant(ERROR_NOT_AVAILABLE))
-		onComplete.callv(arguments: params)
+		onComplete.call(Variant(ERROR_NOT_AVAILABLE))
 		#endif
 	}
 
@@ -106,18 +106,14 @@ class GameCenter:RefCounted
 	@Callable
 	func getLocalPlayer(onComplete:Callable)
 	{
-		var params:GArray = GArray()
 		if (GKLocalPlayer.local.isAuthenticated)
 		{
-			params.append(Variant(OK))
-			params.append(Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			onComplete.call(Variant(OK), Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
 		}
 		else
 		{
-			params.append(Variant(NOT_AUTHENTICATED))
+			onComplete.call(Variant(NOT_AUTHENTICATED))
 		}
-		
-		onComplete.callv(arguments: params)
 	}
 
 	@Callable

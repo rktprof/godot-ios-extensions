@@ -1,12 +1,13 @@
 import SwiftGodot
 import Network
 
+let OK:Int = 0
+let ERROR:Int = 1
+let INCOMPATIBLE_IPV6_ADDRESS:Int = 2
+
 @Godot
 class LocalNetworkDiscovery:RefCounted
 {
-	let OK:Int = 0
-	let ERROR:Int = 1
-	let INCOMPATIBLE_IPV6_ADDRESS:Int = 2
 
 	#signal("device_discovered", arguments: ["name": String.self, "port": Int.self, "hash_value": Int.self])
 	#signal("device_lost", arguments: ["name": String.self, "hash_value": Int.self])
@@ -52,8 +53,8 @@ class LocalNetworkDiscovery:RefCounted
 	@Callable
 	func resolveEndpoint(hashValue:Int, onComplete:Callable)
 	{
+		
 		// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
-		var params:GArray = GArray()
 		if let result: NWBrowser.Result = discoveredDevices[hashValue]
 		{
 			let endpoint: NWEndpoint = result.endpoint
@@ -66,7 +67,6 @@ class LocalNetworkDiscovery:RefCounted
 					break
 			}
 
-			//GD.print("Resolving endpoint \(endpoint)...")
 			let networkParams: NWParameters = NWParameters.tcp
 			networkParams.prohibitedInterfaceTypes = [.loopback]
 			networkParams.serviceClass = NWParameters.ServiceClass.responsiveData
@@ -97,22 +97,15 @@ class LocalNetworkDiscovery:RefCounted
 									else
 									{
 										GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
-										params.append(Variant(self.INCOMPATIBLE_IPV6_ADDRESS))
-										params.append(Variant())
-										params.append(Variant())
-										onComplete.callv(arguments: params)
+										onComplete.callDeferred(Variant(INCOMPATIBLE_IPV6_ADDRESS), Variant(), Variant())
+										return
 									}
 								default:
 									break;
 
 							}
-
-							//GD.print("Successfully resolved endpoint \(address_string):\(port)")
-
-							params.append(Variant(self.OK))
-							params.append(Variant(address_string))
-							params.append(Variant(port))
-							onComplete.callv(arguments: params)
+							
+							onComplete.callDeferred(Variant(OK), Variant(address_string), Variant(port))
 						}
 					default:
 						break
@@ -123,10 +116,7 @@ class LocalNetworkDiscovery:RefCounted
 		else
 		{
 			GD.pushError("Found no endpoint corresponding to the hashValue \(hashValue)")
-			params.append(Variant(self.ERROR))
-			params.append(Variant())
-			params.append(Variant())
-			onComplete.callv(arguments: params)
+			onComplete.callDeferred(Variant(ERROR), Variant(), Variant())
 		}
 	}
 

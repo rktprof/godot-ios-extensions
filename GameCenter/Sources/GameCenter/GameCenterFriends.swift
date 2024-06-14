@@ -21,7 +21,6 @@ class GameCenterFriends:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do {
 				var players:GArray = GArray()
 				let friends: [GKPlayer] = try await GKLocalPlayer.local.loadFriends()
@@ -37,14 +36,10 @@ class GameCenterFriends:RefCounted
 					players.append(Variant(player))
 				}
 
-				params.append(Variant(OK))
-				params.append(Variant(players))
-				onComplete.callv(arguments: params)
-
+				onComplete.callDeferred(Variant(OK), Variant(players))
 			} catch {
 				GD.pushError("Error getting friends: \(error).")
-				params.append(Variant(ERROR_ACCESSING_FRIENDS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(ERROR_ACCESSING_FRIENDS), Variant())
 			}
 		}
 	}
@@ -68,33 +63,28 @@ class GameCenterFriends:RefCounted
 	@Callable
 	func canAccessFriends(onComplete:Callable)
 	{
-		var params:GArray = GArray()
 		do
 		{
-			GKLocalPlayer.local.loadFriendsAuthorizationStatus() 
-			{ (status: GKFriendsAuthorizationStatus, error: (any Error)?) in
-				params.append(Variant(OK))
+			GKLocalPlayer.local.loadFriendsAuthorizationStatus() { status, error in
+				var authorizationStatus = self.AUTHORIZATION_NOT_DETERMINED
 				switch status
 				{
-					case .notDetermined:
-						params.append(Variant(self.AUTHORIZATION_NOT_DETERMINED))
-					case .authorized:
-						params.append(Variant(self.AUTHORIZATION_AUTHORIZED))
-					case .denied:
-						params.append(Variant(self.AUTHORIZATION_DENIED))
-					case .restricted:
-						params.append(Variant(self.AUTHORIZATION_RESTRICTED))
+				case .notDetermined:
+					authorizationStatus = self.AUTHORIZATION_NOT_DETERMINED
+				case .authorized:
+					authorizationStatus = self.AUTHORIZATION_AUTHORIZED
+				case .denied:
+					authorizationStatus = self.AUTHORIZATION_DENIED
+				case .restricted:
+					authorizationStatus = self.AUTHORIZATION_RESTRICTED
 				}
-
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK), Variant(authorizationStatus))
 			}
 		}
 		catch
 		{
 			GD.pushError("Error accessing friends: \(error).")
-
-			params.append(Variant(ERROR_ACCESSING_FRIENDS))
-			onComplete.callv(arguments: params)
+			onComplete.callDeferred(Variant(ERROR_ACCESSING_FRIENDS), Variant())
 		}
 	}
 

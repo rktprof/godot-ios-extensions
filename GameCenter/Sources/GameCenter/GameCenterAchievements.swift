@@ -12,15 +12,6 @@ class GameCenterAchievements:RefCounted
 	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 
-	let OK:Int = 0
-	let NOT_AUTHENTICATED:Int = 1
-	let FAILED_TO_LOAD_ACHIEVEMENTS:Int = 2
-	let FAILED_TO_RESET_ACHIEVEMENTS:Int = 3
-	let FAILED_TO_SET_PROGRESS:Int = 4
-	let FAILED_TO_LOAD_PROGRESS:Int = 5
-	let FAILED_TO_REPORT_PROGRESS:Int = 6
-	let NOTHING_TO_REPORT:Int = 7
-
 	var hasLoadedAchievements:Bool = false
 	var hasLoadedAchievementDescriptions:Bool = false
 	private(set) var achievements:[GKAchievement] = []
@@ -31,7 +22,6 @@ class GameCenterAchievements:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				if (!hasLoadedAchievements)
@@ -50,14 +40,12 @@ class GameCenterAchievements:RefCounted
 
 				achievement?.percentComplete = achievementProgress
 				
-				params.append(Variant(OK))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK))
 			}
 			catch
 			{
 				GD.pushError("Failed to set achievement progress: \(error)")
-				params.append(Variant(FAILED_TO_SET_PROGRESS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_SET_PROGRESS))
 			}
 		}
 		
@@ -68,7 +56,6 @@ class GameCenterAchievements:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				if (!hasLoadedAchievements)
@@ -85,15 +72,12 @@ class GameCenterAchievements:RefCounted
 					achievements.append(achievement!)
 				}
 
-				params.append(Variant(OK))
-				params.append(Variant(achievement?.percentComplete ?? 0))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK), Variant(achievement?.percentComplete ?? 0))
 			}
 			catch
 			{
 				GD.pushError("Failed to get achievement progress: \(error)")
-				params.append(Variant(FAILED_TO_LOAD_PROGRESS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_LOAD_PROGRESS), Variant())
 			}
 		}	
 	}
@@ -103,7 +87,6 @@ class GameCenterAchievements:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				if (!GKLocalPlayer.local.isAuthenticated)
@@ -113,18 +96,16 @@ class GameCenterAchievements:RefCounted
 
 				if (!hasLoadedAchievements)
 				{
-					params.append(Variant(NOTHING_TO_REPORT))
-					onComplete.callv(arguments: params)
-					return
+					onComplete.callDeferred(Variant(NOTHING_TO_REPORT))
+				} else {
+					try await GKAchievement.report(achievements)
+					onComplete.callDeferred(Variant(OK))
 				}
-
-				try await GKAchievement.report(achievements)
 			}
 			catch
 			{
 				GD.pushError("Failed to report achievment progress: \(error)")
-				params.append(Variant(FAILED_TO_REPORT_PROGRESS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_REPORT_PROGRESS))
 			}
 		}
 	}
@@ -134,7 +115,6 @@ class GameCenterAchievements:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				if (!hasLoadedAchievements)
@@ -173,15 +153,12 @@ class GameCenterAchievements:RefCounted
 					result.append(Variant(achievement))
 				}
 
-				params.append(Variant(OK))
-				params.append(Variant(result))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK), Variant(result))
 			}
 			catch
 			{
 				GD.pushError("Failed to get achievements: \(error)")
-				params.append(Variant(FAILED_TO_LOAD_ACHIEVEMENTS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_LOAD_ACHIEVEMENTS), Variant())
 			}
 		}
 	}
@@ -191,17 +168,14 @@ class GameCenterAchievements:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				try await GKAchievement.resetAchievements()
-				params.append(Variant(OK))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK))
 			}
 			catch
 			{
-				params.append(Variant(FAILED_TO_RESET_ACHIEVEMENTS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_RESET_ACHIEVEMENTS))
 			}
 		}
 	}

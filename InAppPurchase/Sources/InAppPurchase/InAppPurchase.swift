@@ -14,19 +14,20 @@ public enum StoreError: Error {
     case failedVerification
 }
 
+let OK:Int = 0
+let ERROR:Int = 1
+let FAILED_TO_GET_PRODUCTS:Int = 2
+let PURCHASE_FAILED:Int = 3
+let PURCHASE_SUCCESSFUL_BUT_UNVERIFIED:Int = 4
+let PURCHASE_PENDING_AUTHORIZATION:Int = 5
+let PURCHASE_CANCELLED_BY_USER:Int = 6
+let NO_SUCH_PRODUCT:Int = 7
+
 @Godot
 class InAppPurchase:RefCounted
 {
 	#signal("product_purchased", arguments: ["product_id": String.self])
 	#signal("product_revoked", arguments: ["product_id": String.self])
-	
-	let OK:Int = 0
-	let ERROR:Int = 1
-	let FAILED_TO_GET_PRODUCTS:Int = 2
-	let PURCHASE_FAILED:Int = 3
-	let PURCHASE_SUCCESSFUL_BUT_UNVERIFIED:Int = 4
-	let PURCHASE_PENDING_AUTHORIZATION:Int = 5
-	let PURCHASE_CANCELLED_BY_USER:Int = 6
 
 	private(set) var productIdentifiers:[String] = []
 
@@ -70,7 +71,6 @@ class InAppPurchase:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				if let product: Product = try await getProduct(productIdentifier)
@@ -83,27 +83,26 @@ class InAppPurchase:RefCounted
 							let transaction: Transaction = try checkVerified(verification)
 							await transaction.finish()
 
-							params.append(Variant(OK))
-							onComplete.callv(arguments: params)
+							onComplete.callDeferred(Variant(OK))
 							break
 						case .pending:
 							// Transaction waiting on authentication or approval
-							params.append(Variant(PURCHASE_PENDING_AUTHORIZATION))
-							onComplete.callv(arguments: params)
+							onComplete.callDeferred(Variant(PURCHASE_PENDING_AUTHORIZATION))
 							break
 						case .userCancelled:
 							// User cancelled the purchase
-							params.append(Variant(PURCHASE_CANCELLED_BY_USER))
-							onComplete.callv(arguments: params)
+							onComplete.callDeferred(Variant(PURCHASE_CANCELLED_BY_USER))
 							break;
 					}
+				} else {
+					GD.pushError("IAP Product doesn't exist: \(productIdentifier)")
+					onComplete.callDeferred(Variant(NO_SUCH_PRODUCT))
 				}
 			}
 			catch
 			{
-				GD.pushError("Failed to get products from App Store, error: \(error)")
-				params.append(Variant(PURCHASE_FAILED))
-				onComplete.callv(arguments: params)
+				GD.pushError("IAP Failed to get products from App Store, error: \(error)")
+				onComplete.callDeferred(Variant(PURCHASE_FAILED))
 			}
 		}
 	}
@@ -119,7 +118,6 @@ class InAppPurchase:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				let storeProducts: [Product] = try await Product.products(for: identifiers)
@@ -146,16 +144,13 @@ class InAppPurchase:RefCounted
 							product.type = IAPProduct.TYPE_UNKNOWN
 					}
 					
-					params.append(Variant(OK))
-					params.append(Variant(products))
-					onComplete.callv(arguments: params)
+					onComplete.callDeferred(Variant(OK), Variant(products))
 				}
 			}
 			catch
 			{
 				GD.pushError("Failed to get products from App Store, error: \(error)")
-				params.append(Variant(FAILED_TO_GET_PRODUCTS))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(FAILED_TO_GET_PRODUCTS), Variant())
 			}
 		}
 	}
@@ -165,18 +160,15 @@ class InAppPurchase:RefCounted
 	{
 		Task
 		{
-			var params:GArray = GArray()
 			do
 			{
 				try await AppStore.sync()
-				params.append(Variant(OK))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(OK))
 			}
 			catch
 			{
 				GD.pushError("Failed to restore purchases: \(error)")
-				params.append(Variant(ERROR))
-				onComplete.callv(arguments: params)
+				onComplete.callDeferred(Variant(ERROR))
 			}
 		}
 	}
