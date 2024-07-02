@@ -10,12 +10,27 @@ GREEN="$(tput setaf 2)"
 CYAN="$(tput setaf 6)"
 RED="$(tput setaf 1)"
 RESET_FORMATTING="$(tput sgr0)"
+FORCE_COPY_LIB=false
 
-PROJECT=$1
+# Very ugly solution, should look into handling flags properly
+if [[ $1 == "-f" ]]; then
+	FORCE_COPY_LIB=true
+	PROJECT=$2
+	TARGET=$3
+	CONFIG=$4
+else
+	PROJECT=$1
+	TARGET=$2
+	CONFIG=$3
+fi
+
+
 if [[ ! $PROJECT ]]; then
 	echo 
-	echo "Syntax: build <project> <platform?> <config?>"
+	echo "Syntax: build [-f] <project> <platform?> <config?>"
 	echo 
+	echo "-f force copy SwiftGodot library even if it exists"
+	echo "	Useful if you have updated the SwiftGodot version"
 	echo "<project> is the project folder to build. eg GameCenter"
 	echo "<platform> is the platform to build for"
 	echo "	Options: ios, macos & all. (Default: all)"
@@ -24,12 +39,10 @@ if [[ ! $PROJECT ]]; then
 	exit 0
 fi
 
-TARGET=$2
 if [[ ! $TARGET ]]; then
 	TARGET="all"
 fi
 
-CONFIG=$3
 if [[ ! $CONFIG ]]; then
 	CONFIG="release"
 fi
@@ -76,7 +89,7 @@ build_ios() {
 	binary_path="bin/ios"
 
 	COPY_COMMANDS+=("cp -af ""$product_path/$1.framework ""$binary_path")
-	if ! [[ -e "$binary_path/SwiftGodot.framework" ]]; then
+	if [[ ! -e "$binary_path/SwiftGodot.framework" || $FORCE_COPY_LIB == true ]]; then
 		COPY_COMMANDS+=("cp -af ""$product_path/SwiftGodot.framework ""$binary_path")
 	fi
 
@@ -123,7 +136,7 @@ build_macos_xcode() {
 	binary_path="bin/macos"
 
 	COPY_COMMANDS+=("cp -af $product_path/$1.framework $binary_path")
-	if ! [[ -e "$binary_path/SwiftGodot.framework" ]]; then
+	if [[ ! -e "$binary_path/SwiftGodot.framework" || $FORCE_COPY_LIB == true ]]; then
 		COPY_COMMANDS+=("cp -af $product_path/SwiftGodot.framework $binary_path")
 	fi
 
@@ -163,7 +176,7 @@ build_macos() {
 	binary_path="bin/macos"
 
 	COPY_COMMANDS+=("cp -af $product_path/lib$1.dylib $binary_path")
-	if ! [[ -e "$binary_path/libSwiftGodot.dylib" ]]; then
+	if [[ ! -e "$binary_path/libSwiftGodot.dylib" || $FORCE_COPY_LIB == true ]]; then
 		COPY_COMMANDS+=("cp -af $product_path/libSwiftGodot.dylib $binary_path")
 	fi
 
