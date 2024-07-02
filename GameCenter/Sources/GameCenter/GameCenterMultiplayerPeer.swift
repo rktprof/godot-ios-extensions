@@ -518,7 +518,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MATCHMAKING_STATUS_FAILED)
 	}
 
-	func match(_ match: GKMatch, shoudlReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
+	func match(_ match: GKMatch, shouldReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
 		return false
 	}
 
@@ -597,8 +597,8 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			delegate.match(match, didFailWithError: error)
 		}
 
-		func match(_ match: GKMatch, shoudlReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
-			return delegate.match(match, shoudlReinviteDisconnectedPlayer: player)
+		func match(_ match: GKMatch, shouldReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
+			return delegate.match(match, shouldReinviteDisconnectedPlayer: player)
 		}
 
 		func match(_ match: GKMatch, didReceive data:Data, fromRemotePlayer player: GKPlayer) {
