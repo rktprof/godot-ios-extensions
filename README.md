@@ -13,6 +13,7 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Friends
   - Get list of friends
   - Open Friends overlay
+  - Friend invites
 - Achievements
   - Reward achievements
   - Open overlay
@@ -34,7 +35,6 @@ Everything is provided as-is, I'm building new plugins as I need them
 Basic plugin documentation
 
 **GameCenter**
-- Friend invites
 - macOS Support (should mostly work but opening overlays doesn't)
 
 **Bonjour**
