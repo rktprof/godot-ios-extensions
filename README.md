@@ -30,11 +30,12 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Get list of products
 - Purchase product
 
-## Coming: (assuming I can figure it out)
+## TODO: (assuming I can figure it out)
 
-Basic plugin documentation
+Basic plugin documentation (for now, feel free to create an issue with a question)
 
 **GameCenter**
+- Challenges
 - macOS Support (should mostly work but opening overlays doesn't)
 
 **Bonjour**
