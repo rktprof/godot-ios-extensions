@@ -30,6 +30,9 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Get list of products
 - Purchase product
 
+**Device**
+- Taptic Engine (Simple taps)
+
 ## TODO: (assuming I can figure it out)
 
 Basic plugin documentation (for now, feel free to create an issue with a question)
@@ -46,4 +49,4 @@ Basic plugin documentation (for now, feel free to create an issue with a questio
 
 **Device**
 - Gyroscope
-- Taptic Engine
+- Taptic Engine (More advanced funcitonality)
