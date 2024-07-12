@@ -53,7 +53,7 @@ class Haptics:RefCounted {
 	}
 
 	@Callable
-	func playEvent(sharpness:Float, intensity:Float) {
+	func playTap(sharpness:Float, intensity:Float) {
 		if !isHapticsSupported {
 			return
 		}
@@ -70,6 +70,26 @@ class Haptics:RefCounted {
 			GD.pushError("Failed to play haptic: \(error)")
 		}
 	}
+
+	@Callable
+	func playEvent(sharpness:Float, intensity:Float, duration:Float) {
+		if !isHapticsSupported {
+			return
+		}
+
+		do {
+			let pattern = try CHHapticPattern(events: [
+				CHHapticEvent(eventType: .hapticContinuous, parameters: [
+					CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
+					CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity)	
+				], relativeTime: 0, duration: TimeInterval(duration))
+			], parameters: [])
+			try playPattern(pattern: pattern)
+		} catch {
+			GD.pushError("Failed to play haptic: \(error)")
+		}
+	}
+
 
 	@Callable
 	func supportsHaptics() -> Bool {
