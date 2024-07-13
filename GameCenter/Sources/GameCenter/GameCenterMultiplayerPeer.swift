@@ -178,6 +178,9 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 				isMatching = true
 				match = try await GKMatchmaker.shared().findMatch(for: request)
 				match?.delegate = self.delegate
+			} catch GKError.cancelled {
+				// Handling user cancelled separately here because trying to emit a signal here causes a crash
+				return
 			} catch {
 				GD.pushError("[Matchmaking] Unable to find players: \(error)")
 				emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MATCHMAKING_STATUS_TIMEOUT)
