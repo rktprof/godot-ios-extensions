@@ -31,7 +31,7 @@ Everything is provided as-is, I'm building new plugins as I need them
 - Purchase product
 
 **Device**
-- Taptic Engine (Simple taps)
+- Taptic Engine (Simple taps & extended vibrations)
 
 ## TODO: (assuming I can figure it out)
 
@@ -49,4 +49,4 @@ Basic plugin documentation (for now, feel free to create an issue with a questio
 
 **Device**
 - Gyroscope
-- Taptic Engine (More advanced funcitonality)
+- Taptic Engine (Play vibration from sound or external file)
