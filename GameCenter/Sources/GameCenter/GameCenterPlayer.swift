@@ -1,22 +1,23 @@
 import SwiftGodot
+import GameKit
 
 @Godot
-class GameCenterPlayer:RefCounted
-{
-	@Export
-	var alias:String = ""
-	@Export
-	var displayName:String = ""
+class GameCenterPlayer:RefCounted {
+	@Export	var alias:String = ""
+	@Export	var displayName:String = ""
 	
-	@Export
-	var gamePlayerID:String = ""
-	@Export
-	var teamPlayerID:String = ""
+	@Export	var gamePlayerID:String = ""
+	@Export	var teamPlayerID:String = ""
 	
-	@Export
-	var isUnderage:Bool = false
-	@Export
-	var isMultiplayerGamingRestricted:Bool = false
-	@Export
-	var isPersonalizedCommunicationRestricted:Bool = false
+	@Export	var isInvitable:Bool = false
+
+	convenience init(_ player:GKPlayer) {
+		self.init()
+
+		alias = player.alias
+		displayName = player.displayName
+		gamePlayerID = player.gamePlayerID
+		teamPlayerID = player.teamPlayerID
+		isInvitable = player.isInvitable
+	}
 }

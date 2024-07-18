@@ -1,8 +1,7 @@
 import SwiftGodot
 
 @Godot
-class GameCenterAchievement:RefCounted
-{
+class GameCenterAchievement:RefCounted {
 	@Export var identifier:String = ""
 	@Export var title:String = ""
 	@Export var unachievedDescription:String = ""

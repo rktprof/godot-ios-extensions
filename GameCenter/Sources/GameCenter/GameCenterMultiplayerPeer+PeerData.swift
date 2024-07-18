@@ -44,6 +44,10 @@ extension GameCenterMultiplayerPeer {
 		return peerMap[gamePlayerID]?.id
 	}
 
+	func removePeer(withID gamePlayerID:String) -> PeerData? {
+		return peerMap.removeValue(forKey: gamePlayerID)
+	}
+
 	func getInitiative(for player:GKPlayer) -> UInt32? {
 		return getInitiative(for: player.gamePlayerID)
 	}
@@ -83,7 +87,7 @@ extension GameCenterMultiplayerPeer {
 	func getPlayerWithID(peerID:Int32) -> GKPlayer? {
 		if let players: [GKPlayer] = match?.players {
 			for player: GKPlayer in players {
-				if (getPeerID(for: player.gamePlayerID) == peerID) {
+				if getPeerID(for: player.gamePlayerID) == peerID {
 					return player
 				}
 			}
@@ -94,6 +98,10 @@ extension GameCenterMultiplayerPeer {
 
 	func getPlayerCount() -> Int {
 		return peerMap.count
+	}
+
+	func clearPeers() {
+		peerMap.removeAll()
 	}
 
 	func generateInitiative() -> UInt32 {

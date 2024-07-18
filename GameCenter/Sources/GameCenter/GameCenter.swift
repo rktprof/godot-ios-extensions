@@ -3,15 +3,14 @@
 
 import SwiftGodot
 import GameKit
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
 #endif
 
 #initSwiftExtension(cdecl: "swift_entry_point", types: [
 	GameCenter.self,
 	GameCenterPlayer.self,
-	GameCenterFriends.self,
-	GameCenterFriend.self,
+	GameCenterPlayerLocal.self,
 	GameCenterLeaderboards.self,
 	GameCenterLeaderboardEntry.self,
 	GameCenterAchievements.self,
@@ -20,22 +19,15 @@ import UIKit
 ])
 
 let OK:Int = 0
-let ERROR:Int = 1
-let NOT_AUTHENTICATED:Int = 2
-let ERROR_NOT_AVAILABLE: Int = 3
-let ERROR_FAILED_TO_AUTHENTICATE:Int = 4
-
-let ERROR_ACCESSING_FRIENDS:Int = 6
-
-let ERROR_FAILED_TO_SUBMIT_SCORE:Int = 7
-let ERROR_FAILED_TO_LOAD_LEADERBOARD_ENTRIES:Int = 8
-
-let FAILED_TO_LOAD_ACHIEVEMENTS:Int = 9
-let FAILED_TO_RESET_ACHIEVEMENTS:Int = 10
-let FAILED_TO_SET_PROGRESS:Int = 11
-let FAILED_TO_LOAD_PROGRESS:Int = 12
-let FAILED_TO_REPORT_PROGRESS:Int = 13
-let NOTHING_TO_REPORT:Int = 14
+enum GameCenterError:Int, Error {
+	case unknownError = 1
+	case notAuthenticated = 2
+	case notAvailable = 3
+	case failedToAuthenticate = 4
+	case failedToLoadFriends = 6
+	case friendAccessRestricted = 7
+	case failedToLoadPicture = 8
+}
 
 @Godot
 class GameCenter:RefCounted, GKInviteEventListener {
@@ -49,6 +41,9 @@ class GameCenter:RefCounted, GKInviteEventListener {
 	var inviteDelegate:InviteDelegate?
 	var invites:[GKInvite] = []
 
+	var player:GameCenterPlayer?
+	var friends:[GKPlayer]?
+
 	required init() {
 		super.init()
 		GameCenter.instance = self
@@ -61,52 +56,79 @@ class GameCenter:RefCounted, GKInviteEventListener {
 		inviteDelegate = InviteDelegate(withDelegate: self)
 	}
 
+	// MARK: Authentication
+
 	@Callable
-	func authenticate(onComplete:Callable = Callable())
-	{
-		#if os(iOS)
-		if (GKLocalPlayer.local.isAuthenticated)
-		{
-			onComplete.call(Variant(OK), Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+	func authenticate(onComplete:Callable = Callable()) {
+		if GKLocalPlayer.local.isAuthenticated && self.player != nil {
+			onComplete.call(Variant(OK), Variant(self.player!))
 			return
 		}
 
+		#if os(iOS)
+
 		GKLocalPlayer.local.authenticateHandler = { loginController, error in
-			if let loginController = loginController
-			{
-				do
-				{
-					#if os(iOS)
-					// Present the view controller so the player can log in
-					try self.viewController.getRootController()?.present(loginController, animated: true, completion: nil)
-					#endif
-				}
-				catch
-				{
-					GD.pushError("Failed to present login window \(error)")
-				}
-
+			guard loginController == nil else {
+				self.viewController.getRootController()?.present(loginController!, animated:true)
 				return
 			}
 
-			if (error != nil)
-			{
-				GD.pushError(error)
-				onComplete.callDeferred(Variant(ERROR_FAILED_TO_AUTHENTICATE), Variant())
+			guard error == nil else {
+				GD.pushError("Failed to authenticate \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
 				return
 			}
 
-			if (self.inviteDelegate != nil) {
+			if self.inviteDelegate != nil {
 				GKLocalPlayer.local.register(self.inviteDelegate!)
 			}
 
-			onComplete.callDeferred(Variant(OK), Variant(self.getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
+			onComplete.callDeferred(Variant(OK), Variant(player))
 		}
 
+		#elseif os(watchOS)
+
+		GKLocalPlayer.local.authenticateHandler = { error in
+			guard error == nil else {
+				GD.pushError("Failed to authenticate \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
+				return
+			}
+
+			if self.inviteDelegate != nil {
+				GKLocalPlayer.local.register(self.inviteDelegate!)
+			}
+
+			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
+			onComplete.callDeferred(Variant(OK), Variant(player))
+		}
+		
+		#elseif os(macOS)
+
+		GKLocalPlayer.local.authenticateHandler = { loginController, error in
+			guard loginController == nil else {
+				// TODO: Figure out how to show login window on macOS
+				return
+			}
+
+			guard error == nil else {
+				GD.pushError("Failed to authenticate \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
+				return
+			}
+
+			if self.inviteDelegate != nil {
+				GKLocalPlayer.local.register(self.inviteDelegate!)
+			}
+
+			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
+			onComplete.callDeferred(Variant(OK), Variant(player))
+		}
+		
 		#else
 		GD.pushWarning("GameCenter not available on this platform")
-
-		onComplete.call(Variant(ERROR_NOT_AVAILABLE))
+		onComplete.call(Variant(GameCenterError.notAvailable.rawValue))
 		#endif
 	}
 
@@ -123,60 +145,111 @@ class GameCenter:RefCounted, GKInviteEventListener {
 	@Callable
 	func getLocalPlayer(onComplete:Callable)
 	{
-		if (GKLocalPlayer.local.isAuthenticated)
-		{
-			onComplete.call(Variant(OK), Variant(getGameCenterPlayer(localPlayer: GKLocalPlayer.local)))
+		guard GKLocalPlayer.local.isAuthenticated && self.player != nil else {
+			onComplete.call(Variant(GameCenterError.notAuthenticated.rawValue))
+			return
 		}
-		else
-		{
-			onComplete.call(Variant(NOT_AUTHENTICATED))
+
+		onComplete.call(Variant(OK), Variant(self.player!))
+	}
+
+	@Callable
+	func loadProfilePicture(onComplete:Callable) {
+		Task {
+			do {
+				GD.print("Loading profile picture")
+				let image = try await GKLocalPlayer.local.loadImage(size: .small)
+				onComplete.callDeferred(Variant(OK), Variant(image))
+			} catch {
+				GD.pushError("Failed to load profile picture. \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
+			}
+		}
+	}
+
+	// MARK: Friends
+
+	@Callable
+	func loadFriends(onComplete:Callable) {
+		Task {
+			do {
+				var players = GArray()
+				let friends = try await GKLocalPlayer.local.loadFriends()
+
+				for friend in friends {
+					players.append(Variant(GameCenterPlayer(friend)))
+				}
+
+				self.friends = friends
+				onComplete.callDeferred(Variant(OK), Variant(players))
+
+			} catch {
+				GD.pushError("Error loading friends. \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadFriends.rawValue))
+			}
 		}
 	}
 
 	@Callable
-	func showOverlay(onClose:Callable)
-	{
-		#if os(iOS)
+	func loadFriendPicture(gamePlayerID:String, onComplete:Callable) {
+		if friends == nil {
+			loadFriends(onComplete: Callable())
+		}
+
+		Task {
+			do {
+				let friend = self.friends!.first(where: { $0.gamePlayerID == gamePlayerID })!
+				let image = try await friend.loadImage(size:.small)
+				onComplete.callDeferred(Variant(OK), Variant(image))
+			} catch {
+				GD.pushError("Failed to load friend picture. \(error)")
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
+			}
+		}
+	}
+
+	@Callable
+	func canAccessFriends(onComplete:Callable) {
+		Task {
+			do {
+				let status = try await GKLocalPlayer.local.loadFriendsAuthorizationStatus()
+				onComplete.callDeferred(Variant(OK), Variant(status.rawValue))
+			} catch {
+				GD.pushError("Error accessing friends: \(error).")
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadFriends.rawValue), Variant())
+			}
+		}
+	}
+
+	// MARK: UI Overlays
+
+	@Callable
+	func showOverlay(onClose:Callable) {
+		#if canImport(UIKit)
 		viewController.showUIController(GKGameCenterViewController(state: .dashboard), onClose: onClose)
 		#endif
 	}
 
 	@Callable
-	func showAccessPoint(showHighlights:Bool)
-	{
-		#if os(iOS)
-		GKAccessPoint.shared.location = .topTrailing
-		GKAccessPoint.shared.showHighlights = showHighlights
-		GKAccessPoint.shared.isActive = true
+	func showFriendsOverlay(onClose:Callable) {
+		#if canImport(UIKit)
+		viewController.showUIController(GKGameCenterViewController(state: .localPlayerFriendsList), onClose: onClose)
 		#endif
 	}
 
 	@Callable
-	func hideAccessPoint()
-	{
-		#if os(iOS)
+	func showAccessPoint(showHighlights:Bool) {
+		GKAccessPoint.shared.location = .topTrailing
+		GKAccessPoint.shared.showHighlights = showHighlights
+		GKAccessPoint.shared.isActive = true
+	}
+
+	@Callable
+	func hideAccessPoint() {
 		GKAccessPoint.shared.isActive = false
-		#endif
 	}
 
 	// Internal
-
-	func getGameCenterPlayer(localPlayer:GKLocalPlayer) -> GameCenterPlayer
-	{
-		// Player was successfully authenticated.
-		var player: GameCenterPlayer = GameCenterPlayer()
-		player.alias = localPlayer.alias
-		player.displayName = localPlayer.displayName
-		player.gamePlayerID = localPlayer.gamePlayerID
-		player.teamPlayerID = localPlayer.teamPlayerID
-			
-		// Check if there are any player restrictions
-		player.isUnderage = localPlayer.isUnderage
-		player.isMultiplayerGamingRestricted = localPlayer.isMultiplayerGamingRestricted
-		player.isPersonalizedCommunicationRestricted = localPlayer.isPersonalizedCommunicationRestricted
-
-		return player
-	}
 
 	func getInvite(withIndex index:Int) -> GKInvite {
 		return invites[index]

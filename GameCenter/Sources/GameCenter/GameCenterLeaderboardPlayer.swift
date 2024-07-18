@@ -2,8 +2,7 @@ import SwiftGodot
 import GameKit
 
 @Godot
-class GameCenterLeaderboardEntry:RefCounted
-{
+class GameCenterLeaderboardEntry:RefCounted {
 	@Export var rank:Int = 0
 	@Export var displayName:String = ""
 
@@ -14,25 +13,23 @@ class GameCenterLeaderboardEntry:RefCounted
 
 	@Export var image:Image?
 
-	init(_ entry:GKLeaderboard.Entry, image:Image? = nil)
-	{
+	init(_ entry:GKLeaderboard.Entry, image:Image? = nil) {
 		self.rank = entry.rank
 		self.displayName = entry.player.displayName
 		self.score = entry.score
 		self.formattedScore = entry.formattedScore
+		// TODO: Figure out how to best send dates to godot
 		//self.date = entry.date
 		self.image = image
 
 		super.init()
 	}
 
-	required init()
-	{
+	required init() {
 		super.init()
 	}
 	
-	required init(nativeHandle: UnsafeRawPointer)
-	{	
+	required init(nativeHandle: UnsafeRawPointer) {	
 	 	super.init(nativeHandle: nativeHandle)
 	} 
 }

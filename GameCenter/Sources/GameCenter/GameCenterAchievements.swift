@@ -8,6 +8,15 @@ import UIKit
 @Godot
 class GameCenterAchievements:RefCounted
 {
+	enum AchievementError:Int, Error {
+		case failedToLoad = 0
+		case failedToReset = 1
+		case failedToSetProgress = 2
+		case failedToLoadProgress = 3
+		case failedToReportPorgress = 4
+		case nothingToReport = 5
+	}
+
 	#if os(iOS)
 	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
@@ -18,22 +27,17 @@ class GameCenterAchievements:RefCounted
 	private(set) var achievementDescriptions:[GKAchievementDescription] = []
 
 	@Callable
-	func setAchievementProgress(achievementID:String, achievementProgress:Double, onComplete:Callable)
-	{
-		Task
-		{
-			do
-			{
-				if (!hasLoadedAchievements)
-				{
+	func setAchievementProgress(achievementID:String, achievementProgress:Double, onComplete:Callable) {
+		Task {
+			do {
+				if !hasLoadedAchievements {
 					try await updateAchievements()
 				}
 
 				var achievement:GKAchievement? = nil
 				achievement = achievements.first(where: { $0.identifier == achievementID })
 
-				if (achievement == nil)
-				{
+				if achievement == nil {
 					achievement = GKAchievement(identifier: achievementID)
 					achievements.append(achievement!)
 				}
@@ -41,95 +45,73 @@ class GameCenterAchievements:RefCounted
 				achievement?.percentComplete = achievementProgress
 				
 				onComplete.callDeferred(Variant(OK))
-			}
-			catch
-			{
+			} catch {
 				GD.pushError("Failed to set achievement progress: \(error)")
-				onComplete.callDeferred(Variant(FAILED_TO_SET_PROGRESS))
+				onComplete.callDeferred(Variant(AchievementError.failedToSetProgress.rawValue))
 			}
 		}
-		
 	}
 
 	@Callable
-	func getAchievementProgress(achievementID:String, onComplete:Callable)
-	{
-		Task
-		{
-			do
-			{
-				if (!hasLoadedAchievements)
-				{
+	func getAchievementProgress(achievementID:String, onComplete:Callable) {
+		Task {
+			do {
+				if !hasLoadedAchievements {
 					try await updateAchievements()
 				}
 
 				var achievement:GKAchievement? = nil
 				achievement = achievements.first(where: { $0.identifier == achievementID })
 				
-				if (achievement == nil)
-				{
+				if achievement == nil {
 					achievement = GKAchievement(identifier: achievementID)
 					achievements.append(achievement!)
 				}
 
 				onComplete.callDeferred(Variant(OK), Variant(achievement?.percentComplete ?? 0))
-			}
-			catch
-			{
+			} catch {
 				GD.pushError("Failed to get achievement progress: \(error)")
-				onComplete.callDeferred(Variant(FAILED_TO_LOAD_PROGRESS), Variant())
+				onComplete.callDeferred(Variant(AchievementError.failedToLoadProgress.rawValue), Variant())
 			}
 		}	
 	}
 
 	@Callable
-	func reportAchievementProgress(onComplete:Callable)
-	{
-		Task
-		{
-			do
-			{
-				if (!GKLocalPlayer.local.isAuthenticated)
-				{
+	func reportAchievementProgress(onComplete:Callable)	{
+		Task {
+			do {
+				if !GKLocalPlayer.local.isAuthenticated {
 					throw GKError(.notAuthenticated)
 				}
 
-				if (!hasLoadedAchievements)
-				{
-					onComplete.callDeferred(Variant(NOTHING_TO_REPORT))
+
+				if !hasLoadedAchievements {
+					onComplete.callDeferred(Variant(AchievementError.nothingToReport.rawValue))
 				} else {
 					try await GKAchievement.report(achievements)
 					onComplete.callDeferred(Variant(OK))
 				}
-			}
-			catch
-			{
+			} catch {
 				GD.pushError("Failed to report achievment progress: \(error)")
-				onComplete.callDeferred(Variant(FAILED_TO_REPORT_PROGRESS))
+				onComplete.callDeferred(Variant(AchievementError.failedToReportPorgress.rawValue))
 			}
 		}
 	}
 
 	@Callable
-	func getAchievements(onComplete:Callable)
-	{
-		Task
-		{
-			do
-			{
-				if (!hasLoadedAchievements)
-				{
+	func getAchievements(onComplete:Callable) {
+		Task {
+			do {
+				if !hasLoadedAchievements {
 					try await updateAchievements()
 				}
 
-				if (!hasLoadedAchievementDescriptions)
-				{
+				if !hasLoadedAchievementDescriptions {
 					try await updateAchievementDescriptions()
 				}
 
 				var result:GArray = GArray()
-				for entry: GKAchievementDescription in achievementDescriptions
-				{
+				for entry: GKAchievementDescription in achievementDescriptions {
 					var achievement:GameCenterAchievement = GameCenterAchievement()
 					achievement.identifier = entry.identifier
 					achievement.title = entry.title
@@ -138,14 +120,12 @@ class GameCenterAchievements:RefCounted
 					achievement.maximumPoints = entry.maximumPoints
 					achievement.isHidden = entry.isHidden
 					achievement.isReplayable = entry.isReplayable
-					if #available(iOS 17, macOS 14, *)
-					{
+					if #available(iOS 17, macOS 14, *) {
 						achievement.rarityPercent = entry.rarityPercent
 					}
 
 					// Apply completion data if any is available
-					if let completion = achievements.first(where: { $0.identifier == entry.identifier })
-					{
+					if let completion = achievements.first(where: { $0.identifier == entry.identifier }) {
 						achievement.percentComplete = completion.percentComplete
 						achievement.isCompleted = completion.isCompleted
 					}
@@ -154,43 +134,34 @@ class GameCenterAchievements:RefCounted
 				}
 
 				onComplete.callDeferred(Variant(OK), Variant(result))
-			}
-			catch
-			{
+			} catch {
 				GD.pushError("Failed to get achievements: \(error)")
-				onComplete.callDeferred(Variant(FAILED_TO_LOAD_ACHIEVEMENTS), Variant())
+				onComplete.callDeferred(Variant(AchievementError.failedToLoad.rawValue), Variant())
 			}
 		}
 	}
 
 	@Callable
-	func resetAchievements(onComplete:Callable)
-	{
-		Task
-		{
-			do
-			{
+	func resetAchievements(onComplete:Callable) {
+		Task {
+			do {
 				try await GKAchievement.resetAchievements()
 				onComplete.callDeferred(Variant(OK))
-			}
-			catch
-			{
-				onComplete.callDeferred(Variant(FAILED_TO_RESET_ACHIEVEMENTS))
+			} catch {
+				onComplete.callDeferred(Variant(AchievementError.failedToReset.rawValue))
 			}
 		}
 	}
 
 	@Callable
-	func showAchievements(onClose:Callable)
-	{
+	func showAchievements(onClose:Callable) {
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(state: .achievements), onClose: onClose)
 		#endif
 	}
 
 	@Callable
-	func showAchievement(achievementdID:String, onClose:Callable)
-	{
+	func showAchievement(achievementdID:String, onClose:Callable) {
 		#if os(iOS)
 		viewController.showUIController(GKGameCenterViewController(achievementID: achievementdID), onClose: onClose)
 		#endif
@@ -198,28 +169,20 @@ class GameCenterAchievements:RefCounted
 
 	// Internal
 
-	func updateAchievements() async throws
-	{
-		if (GKLocalPlayer.local.isAuthenticated)
-		{
+	func updateAchievements() async throws {
+		if GKLocalPlayer.local.isAuthenticated {
 			self.achievements = try await GKAchievement.loadAchievements()
 			hasLoadedAchievements = true
-		}
-		else
-		{
+		} else {
 			throw GKError(.notAuthenticated)
 		}
 	}
 
-	func updateAchievementDescriptions() async throws
-	{
-		if (GKLocalPlayer.local.isAuthenticated)
-		{
+	func updateAchievementDescriptions() async throws {
+		if GKLocalPlayer.local.isAuthenticated {
 			self.achievementDescriptions = try await GKAchievementDescription.loadAchievementDescriptions()
 			hasLoadedAchievementDescriptions = true
-		}
-		else
-		{
+		} else {
 			throw GKError(.notAuthenticated)
 		}
 	}
