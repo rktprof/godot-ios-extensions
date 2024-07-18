@@ -2,29 +2,28 @@ import SwiftGodot
 import Network
 
 let OK:Int = 0
-let ERROR:Int = 1
-let INCOMPATIBLE_IPV6_ADDRESS:Int = 2
 
 @Godot
-class LocalNetworkDiscovery:RefCounted
-{
-
+class LocalNetworkDiscovery:RefCounted {
 	#signal("device_discovered", arguments: ["name": String.self, "port": Int.self, "hash_value": Int.self])
 	#signal("device_lost", arguments: ["name": String.self, "hash_value": Int.self])
 	#signal("device_updated", arguments: ["name": String.self, "port":Int.self, "old_hash_value":Int.self, "new_hash_value": Int.self])
+
+	enum NetworkDiscoveryError:Int, Error {
+		case failedToResolveEndpoint = 1
+		case incompatibleIPV6Address = 2
+	}
 
 	var browser:NWBrowser? = nil
 	var connection:NWConnection? = nil
 	var discoveredDevices: [Int: (NWBrowser.Result)] = [:]
 
-	deinit
-	{
+	deinit {
 		stop()
 	}
 
 	@Callable
-	func start(typeDescriptor:String)
-	{
+	func start(typeDescriptor:String) {
 		GD.print("Starting LocalNetworkDiscovery for \(typeDescriptor)...")
 		let descriptor: NWBrowser.Descriptor = NWBrowser.Descriptor.bonjourWithTXTRecord(type: typeDescriptor, domain: "local.")
 		let browser: NWBrowser = NWBrowser(for: descriptor, using: .tcp)
@@ -37,8 +36,7 @@ class LocalNetworkDiscovery:RefCounted
 	}
 
 	@Callable
-	func stop()
-	{
+	func stop() {
 		if browser == nil {
 			return
 		}
@@ -51,20 +49,16 @@ class LocalNetworkDiscovery:RefCounted
 	}
 
 	@Callable
-	func resolveEndpoint(hashValue:Int, onComplete:Callable)
-	{
-		
+	func resolveEndpoint(hashValue:Int, onComplete:Callable) {
 		// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
-		if let result: NWBrowser.Result = discoveredDevices[hashValue]
-		{
+		if let result: NWBrowser.Result = discoveredDevices[hashValue] {
 			let endpoint: NWEndpoint = result.endpoint
 			var port:Int = 0
-			switch result.metadata
-			{
-				case .bonjour(let record):
-					port = Int(record.dictionary["port"] ?? "0") ?? 0
-				default:
-					break
+			switch result.metadata {
+			case .bonjour(let record):
+				port = Int(record.dictionary["port"] ?? "0") ?? 0
+			default:
+				break
 			}
 
 			let networkParams: NWParameters = NWParameters.tcp
@@ -76,58 +70,48 @@ class LocalNetworkDiscovery:RefCounted
 
 			connection = NWConnection(to: endpoint, using: networkParams)
 			connection?.stateUpdateHandler = { state in
-				switch state
-				{
-					case .ready:
-						if let innerEndpoint: NWEndpoint = self.connection?.currentPath?.remoteEndpoint,
-						case .hostPort(let host, let tempPort) = innerEndpoint {
-							self.connection?.cancel()
+				switch state {
+				case .ready:
+					if let innerEndpoint: NWEndpoint = self.connection?.currentPath?.remoteEndpoint,
+					case .hostPort(let host, let tempPort) = innerEndpoint {
+						self.connection?.cancel()
 
-							var address_string:String = ""
-							switch host
-							{
-								case .ipv4(let address):
-									address_string = self.ipAddressToString(address)
-									break;
-								case .ipv6(let address):
-									if let ipv4Address = address.asIPv4
-									{
-										address_string = self.ipAddressToString(ipv4Address)
-									}
-									else
-									{
-										GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
-										onComplete.callDeferred(Variant(INCOMPATIBLE_IPV6_ADDRESS), Variant(), Variant())
-										return
-									}
-								default:
-									break;
-
+						var address_string:String = ""
+						switch host {
+						case .ipv4(let address):
+							address_string = self.ipAddressToString(address)
+							break;
+						case .ipv6(let address):
+							if let ipv4Address = address.asIPv4 {
+								address_string = self.ipAddressToString(ipv4Address)
+							} else {
+								GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
+								onComplete.callDeferred(Variant(NetworkDiscoveryError.incompatibleIPV6Address.rawValue), Variant(), Variant())
+								return
 							}
-							
-							onComplete.callDeferred(Variant(OK), Variant(address_string), Variant(port))
+						default:
+							break;
 						}
-					default:
-						break
+						
+						onComplete.callDeferred(Variant(OK), Variant(address_string), Variant(port))
+					}
+				default:
+					break
 				}
 			}
 			connection?.start(queue: DispatchQueue.global(qos: .userInteractive))
-		}
-		else
-		{
+		} else {
 			GD.pushError("Found no endpoint corresponding to the hashValue \(hashValue)")
-			onComplete.callDeferred(Variant(ERROR), Variant(), Variant())
+			onComplete.callDeferred(Variant(NetworkDiscoveryError.failedToResolveEndpoint.rawValue), Variant(), Variant())
 		}
 	}
 
-	func stateChanged(to newState:NWBrowser.State)
-	{
-		switch newState
-		{
-			case .failed(let error):
-				GD.pushError("LocalNetworkDiscovery failed: \(error.localizedDescription)")
-			default:
-				break
+	func stateChanged(to newState:NWBrowser.State) {
+		switch newState {
+		case .failed(let error):
+			GD.pushError("LocalNetworkDiscovery failed: \(error.localizedDescription)")
+		default:
+			break
 		}
 	}
 
