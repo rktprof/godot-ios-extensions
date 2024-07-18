@@ -1,8 +1,7 @@
 import SwiftGodot
 
 @Godot
-class IAPProduct:RefCounted
-{
+class IAPProduct:RefCounted {
 	static let TYPE_UNKNOWN:Int = 0
 	static let TYPE_CONSUMABLE:Int = 1
 	static let TYPE_NON_CONSUMABLE:Int = 2
