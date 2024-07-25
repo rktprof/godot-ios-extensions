@@ -26,6 +26,8 @@ class GameCenterAchievements:RefCounted
 	private(set) var achievements:[GKAchievement] = []
 	private(set) var achievementDescriptions:[GKAchievementDescription] = []
 
+	// MARK: Godot functions
+
 	@Callable
 	func setAchievementProgress(achievementID:String, achievementProgress:Double, onComplete:Callable) {
 		Task {
@@ -167,7 +169,7 @@ class GameCenterAchievements:RefCounted
 		#endif
 	}
 
-	// Internal
+	// MARK: Internal
 
 	func updateAchievements() async throws {
 		if GKLocalPlayer.local.isAuthenticated {

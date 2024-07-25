@@ -52,6 +52,8 @@ class Haptics:RefCounted {
 		}
 	}
 
+	// MARK: Godot functions
+
 	@Callable
 	func playTap(sharpness:Float, intensity:Float) {
 		if !isHapticsSupported {
@@ -96,7 +98,7 @@ class Haptics:RefCounted {
 		CHHapticEngine.capabilitiesForHardware().supportsHaptics
 	}
 
-	// Internal
+	// MARK: Internal
 
 	func playPattern(pattern:CHHapticPattern) throws {
 		try engine.makePlayer(with: pattern).start(atTime: 0)

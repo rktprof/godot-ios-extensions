@@ -15,6 +15,8 @@ class GameCenterLeaderboards:RefCounted {
 	var viewController:GameCenterViewController = GameCenterViewController()
 	#endif
 
+	// MARK: Godot functions
+
 	@Callable
 	func submitScore(score:Int, leaderboardIDs:[String], onComplete:Callable) {
 		Task {
@@ -69,6 +71,8 @@ class GameCenterLeaderboards:RefCounted {
 		viewController.showUIController(GKGameCenterViewController(leaderboardID: leaderboardID, playerScope: GKLeaderboard.PlayerScope.global, timeScope: .allTime), onClose: onClose)
 		#endif
 	}
+
+	// MARK: Internal
 
 	func loadLeaderboard(leaderboardID:String, scope:GKLeaderboard.PlayerScope, time:GKLeaderboard.TimeScope, range:NSRange, onComplete:Callable) {
 		Task {
