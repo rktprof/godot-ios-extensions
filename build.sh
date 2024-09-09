@@ -2,6 +2,8 @@
 
 # Basic build script to help with building extensions
 
+SWIFT_PATH="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift"
+
 TRIPLE_IOS="arm64-apple-ios"
 TRIPLE_MACOS="arm64-apple-macosx"
 
@@ -150,14 +152,14 @@ build_macos() {
 	cache_path="$1/.build"
 
 	if (( $+commands[xcbeautify] )); then
-		set -o pipefail && swift build \
+		set -o pipefail && "${SWIFT_PATH}" build \
 			--package-path "$1" \
 			--configuration "$2" \
 			--triple "$TRIPLE_MACOS" \
 			--scratch-path "$build_path" \
-			--cache-path "$cache_path" | xcbeautify
+			--cache-path "$cache_path" #| xcbeautify
 	else
-		swift build \
+		"${SWIFT_PATH}" build \
 			--package-path "$1" \
 			--configuration "$2" \
 			--triple "$TRIPLE_MACOS" \
