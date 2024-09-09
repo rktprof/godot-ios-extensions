@@ -18,8 +18,7 @@ let package = Package(
 		)
 	],
 	dependencies: [
-		.package(name: "SwiftGodot", path: "../SwiftGodot"),
-		.package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.3.0"),
+		.package(name: "SwiftGodot", path: "../SwiftGodot")
 	],
 	targets: [
 		// Targets are the basic building blocks of a package, defining a module or a test suite.
