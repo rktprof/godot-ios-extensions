@@ -1,30 +1,30 @@
 import Foundation
-import SwiftGodot
 import GameKit
+import SwiftGodot
 
-struct DataPacket:Codable {
+struct DataPacket: Codable {
 	var peerData: PeerData?
 	var bytes: [UInt8]?
 }
 
 extension GameCenterMultiplayerPeer {
-	func encode(peerData:PeerData) -> Data? {
-		let data:DataPacket = DataPacket(peerData: peerData)
+	func encode(peerData: PeerData) -> Data? {
+		let data: DataPacket = DataPacket(peerData: peerData)
 		return encode(dataPacket: data)
 	}
 
-	func encode(packedByteArray:PackedByteArray) -> Data? {
+	func encode(packedByteArray: PackedByteArray) -> Data? {
 		let bytes = [UInt8](packedByteArray)
-		let data: DataPacket = DataPacket(bytes:bytes)
-		return encode(dataPacket:data)
+		let data: DataPacket = DataPacket(bytes: bytes)
+		return encode(dataPacket: data)
 	}
 
-	func encode(byteArray:[UInt8]) -> Data? {
-		let data: DataPacket = DataPacket(bytes:byteArray)
-		return encode(dataPacket:data)
+	func encode(byteArray: [UInt8]) -> Data? {
+		let data: DataPacket = DataPacket(bytes: byteArray)
+		return encode(dataPacket: data)
 	}
 
-	func encode(dataPacket:DataPacket) -> Data? {
+	func encode(dataPacket: DataPacket) -> Data? {
 		let encoder: PropertyListEncoder = PropertyListEncoder()
 		encoder.outputFormat = .binary
 
@@ -37,7 +37,7 @@ extension GameCenterMultiplayerPeer {
 		}
 	}
 
-	func decode(dataPacket:Data) -> DataPacket? {
+	func decode(dataPacket: Data) -> DataPacket? {
 		return try? PropertyListDecoder().decode(DataPacket.self, from: dataPacket)
 	}
 }

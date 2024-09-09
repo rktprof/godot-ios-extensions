@@ -1,26 +1,27 @@
-import SwiftGodot
 import GameKit
+import SwiftGodot
 
 @Godot
-class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingProtocol {
-	let HOST_ID:Int32 = 1
-	let RESERVED_CHANNELS:Int32 = 2
+class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmakingProtocol {
+	let HOST_ID: Int32 = 1
+	let RESERVED_CHANNELS: Int32 = 2
 
 	#signal("server_created")
 	#signal("matchmaking_status_updated", arguments: ["status": Int.self])
 	#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
 
-	enum Mode:Int {
-		case none = 0, server, client, mesh
+	enum Mode: Int {
+		case none = 0
+		case server, client, mesh
 	}
 
-	enum MatchmakingStatus:Int {
+	enum MatchmakingStatus: Int {
 		case successful = 0
 		case failed = 1
 		case timeout = 2
 	}
 
-	enum InviteStatus:Int {
+	enum InviteStatus: Int {
 		case accepted = 0
 		case declined = 1
 		case failed = 2
@@ -32,30 +33,30 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 	}
 
 	struct Packet {
-		var data:[UInt8]
-		var from:Int32 = 0
-		var channel:Int32 = 0
-		var transferMode:MultiplayerPeer.TransferMode = .reliable
+		var data: [UInt8]
+		var from: Int32 = 0
+		var channel: Int32 = 0
+		var transferMode: MultiplayerPeer.TransferMode = .reliable
 	}
 
-	var delegate:MatchDelegate?
+	var delegate: MatchDelegate?
 
-	var activeMode:Mode = .none
-	var uniqueID:Int32 = 0
-	var targetPeer:Int32 = 0
+	var activeMode: Mode = .none
+	var uniqueID: Int32 = 0
+	var targetPeer: Int32 = 0
 
-	var connectionStatus:MultiplayerPeer.ConnectionStatus = .disconnected
+	var connectionStatus: MultiplayerPeer.ConnectionStatus = .disconnected
 
-	var currentTransferMode:MultiplayerPeer.TransferMode = .reliable
-	var currentTransferChannel:Int32 = 0
-	var refuseConnections:Bool = false
+	var currentTransferMode: MultiplayerPeer.TransferMode = .reliable
+	var currentTransferChannel: Int32 = 0
+	var refuseConnections: Bool = false
 
-	var incomingPackets:[Packet] =  []
-	var currentPacket:Packet?
+	var incomingPackets: [Packet] = []
+	var currentPacket: Packet?
 
-	var peerMap:[String:PeerData] = [:] // Maps gamePlayerID to PeerData
-	var match:GKMatch?
-	var isMatching:Bool = false
+	var peerMap: [String: PeerData] = [:]  // Maps gamePlayerID to PeerData
+	var match: GKMatch?
+	var isMatching: Bool = false
 
 	required init() {
 		super.init()
@@ -63,16 +64,17 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		delegate = MatchDelegate(withDelegate: self)
 	}
 
-	required init(nativeHandle:UnsafeRawPointer) {
+	required init(nativeHandle: UnsafeRawPointer) {
 		super.init(nativeHandle: nativeHandle)
 		connectionStatus = .connecting
 		delegate = MatchDelegate(withDelegate: self)
 	}
-	
+
 	// MARK: Godot functions
 
+	/// Send invites to players
 	@Callable
-	func invitePlayers(playerIDs:[String]) {
+	func invitePlayers(playerIDs: [String]) {
 		Task {
 			if isMatching {
 				stopMatchmaking()
@@ -80,12 +82,15 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 
 			isMatching = true
 			connectionStatus = MultiplayerPeer.ConnectionStatus.connecting
-			
+
 			// Generate PeerData
 			// Note that generateUniqueID generates a UInt32 but they always request an Int32, so it's potentially
 			// truncated here which might cause issues
 			// TODO: Make sure we handle duplicate id's
-			setPeerData(for: GKLocalPlayer.local, data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative()))
+			setPeerData(
+				for: GKLocalPlayer.local,
+				data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative())
+			)
 
 			let request: GKMatchRequest = GKMatchRequest()
 			let players: [GKPlayer]
@@ -111,8 +116,9 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
+	/// Join a game recieved through an invite
 	@Callable
-	func joinGame(inviteIndex:Int) {
+	func joinGame(inviteIndex: Int) {
 		Task {
 			if isMatching {
 				stopMatchmaking()
@@ -124,14 +130,17 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			// Note that generateUniqueID generates a UInt32 but they always request an Int32, so it's potentially
 			// truncated here which might cause issues
 			// TODO: Make sure we handle duplicate id's
-			setPeerData(for: GKLocalPlayer.local, data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative()))
+			setPeerData(
+				for: GKLocalPlayer.local,
+				data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative())
+			)
 
 			if let invite: GKInvite = GameCenter.instance?.getInvite(withIndex: inviteIndex) {
 				do {
 					isMatching = true
 					match = try await GKMatchmaker.shared().match(for: invite)
 					match?.delegate = self.delegate
-					
+
 					GameCenter.instance?.removeInvite(withIndex: inviteIndex)
 				} catch {
 					GD.pushError("[Matchmaking] Unable to join game: \(error)")
@@ -149,8 +158,9 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
+	/// Start matchmaking
 	@Callable
-	func startMatchmaking(minPlayers:Int, maxPlayers:Int, playerGroup:Int, playerAttributes:Int) {
+	func startMatchmaking(minPlayers: Int, maxPlayers: Int, playerGroup: Int, playerAttributes: Int) {
 		Task {
 			if isMatching {
 				stopMatchmaking()
@@ -162,8 +172,11 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			// Note that generateUniqueID generates a UInt32 but they always request an Int32, so it's potentially
 			// truncated here which might cause issues
 			// TODO: Make sure we handle duplicate id's
-			setPeerData(for: GKLocalPlayer.local, data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative()))
-			
+			setPeerData(
+				for: GKLocalPlayer.local,
+				data: PeerData(id: Int32(generateUniqueId()), initiative: generateInitiative())
+			)
+
 			let request: GKMatchRequest = GKMatchRequest()
 			request.minPlayers = minPlayers
 			request.maxPlayers = maxPlayers
@@ -191,7 +204,8 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.successful.rawValue)
 		}
 	}
-	
+
+	/// Cancel matchmaking
 	@Callable
 	func stopMatchmaking() {
 		if isMatching {
@@ -201,10 +215,10 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 	}
 
 	@Callable
-	func getPlayerActivity(onComplete:Callable) {
+	func getPlayerActivity(onComplete: Callable) {
 		Task {
 			// For some reason try await GKMatchmaker.shared().queryActivity() does not work, even though the docs say it should
-			GKMatchmaker.shared().queryActivity() { players, error in
+			GKMatchmaker.shared().queryActivity { players, error in
 				if error != nil {
 					GD.pushError("[Matchmaking] Failed to get matchmaking activity. Error \(error!)")
 
@@ -241,7 +255,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		refuseConnections = false
 	}
 
-	override func _disconnectPeer(pPeer:Int32, pForce:Bool) {
+	override func _disconnectPeer(pPeer: Int32, pForce: Bool) {
 		GD.pushWarning("[Matchmaking] GKMatch is unable to disconnect players")
 	}
 
@@ -266,12 +280,12 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 					if targetPeer == 0 {
 						// Send to all players
 						try currentMatch.sendData(toAllPlayers: data!, with: getTransferMode())
-						
+
 					} else if targetPeer < 0 {
 						// Send to all but one
-						var exclude:Int32 = -targetPeer
+						var exclude: Int32 = -targetPeer
 
-						var players:[GKPlayer] = []
+						var players: [GKPlayer] = []
 						for player: GKPlayer in currentMatch.players {
 							if getPeerID(for: player) == exclude {
 								continue
@@ -280,7 +294,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 						}
 
 						try currentMatch.send(data!, to: players, dataMode: getTransferMode())
-						
+
 					} else {
 						// Send to specific player
 						if let player: GKPlayer = getPlayerWithID(peerID: targetPeer) {
@@ -361,10 +375,10 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		return currentTransferMode
 	}
 
-	override func _setRefuseNewConnections(pEnable:Bool) {
+	override func _setRefuseNewConnections(pEnable: Bool) {
 		refuseConnections = pEnable
 	}
-	
+
 	override func _isRefusingNewConnections() -> Bool {
 		return refuseConnections
 	}
@@ -406,7 +420,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func setHost(_ host:GKPlayer) {
+	func setHost(_ host: GKPlayer) {
 		//GD.print("[Matchmaking] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
 		setPeerID(for: host, id: HOST_ID)
 
@@ -449,7 +463,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func removePlayer(_ player:GKPlayer) {
+	func removePlayer(_ player: GKPlayer) {
 		if let peerID: Int32 = getPeerID(for: player) {
 			removePeer(withID: player.gamePlayerID)
 			emit(signal: SignalWith1Argument("peer_disconnected", argument1Name: "id"), Int(peerID))
@@ -458,7 +472,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func sendPeerData(_ peerData:PeerData, to players:[GKPlayer], with mode:GKMatch.SendDataMode) {
+	func sendPeerData(_ peerData: PeerData, to players: [GKPlayer], with mode: GKMatch.SendDataMode) {
 		do {
 			let data = encode(peerData: peerData)
 			try match?.send(data!, to: players, dataMode: mode)
@@ -493,7 +507,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			} else {
 				GD.pushError("[Matchmaking] Found no local peerData to send")
 			}
-			
+
 		case .disconnected:
 			removePlayer(player)
 
@@ -502,7 +516,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func match(_ match:GKMatch, didFailWithError error: Error?) {
+	func match(_ match: GKMatch, didFailWithError error: Error?) {
 		if error != nil {
 			GD.pushError("[Matchmaking] Match failed with error: \(error)")
 		} else {
@@ -516,7 +530,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		return false
 	}
 
-	func match(_ match: GKMatch, didReceive data:Data, fromRemotePlayer player: GKPlayer) {
+	func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
 		do {
 			let gameData = decode(dataPacket: data)
 
@@ -530,7 +544,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 
 			} else if let data: [UInt8] = gameData?.bytes {
 				if let fromPeer: Int32 = getPeerID(for: player) {
-					let packet:Packet = Packet(data: data, from: fromPeer, channel: 0)
+					let packet: Packet = Packet(data: data, from: fromPeer, channel: 0)
 					incomingPackets.append(packet)
 				}
 			} else {
@@ -541,7 +555,12 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func match(_ match: GKMatch, didReceive data: Data, forRecipient recipient: GKPlayer, fromRemotePlayer player: GKPlayer) {
+	func match(
+		_ match: GKMatch,
+		didReceive data: Data,
+		forRecipient recipient: GKPlayer,
+		fromRemotePlayer player: GKPlayer
+	) {
 		if recipient == GKLocalPlayer.local {
 			self.match(match, didReceive: data, fromRemotePlayer: player)
 		} else {
@@ -549,20 +568,44 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 		}
 	}
 
-	func invitationResponseHandler(player:GKPlayer, response:GKInviteRecipientResponse) {
+	func invitationResponseHandler(player: GKPlayer, response: GKInviteRecipientResponse) {
 		switch response {
 		case .accepted:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.accepted.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.accepted.rawValue,
+				player.displayName
+			)
 		case .declined:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.declined.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.declined.rawValue,
+				player.displayName
+			)
 		case .failed:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.failed.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.failed.rawValue,
+				player.displayName
+			)
 		case .incompatible:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.incompatible.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.incompatible.rawValue,
+				player.displayName
+			)
 		case .unableToConnect:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.unableToConnect.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.unableToConnect.rawValue,
+				player.displayName
+			)
 		case .noAnswer:
-			emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.timeout.rawValue, player.displayName)
+			emit(
+				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+				InviteStatus.timeout.rawValue,
+				player.displayName
+			)
 		}
 
 		if match != nil {
@@ -575,10 +618,10 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 	// This class is just an intermediate because a @Godot class doesn't inherit from NSObject
 	// which is required for GKMatchDelegate and GKLocalPlayerListener
 	// TODO: Move GKLocalPlayerListener elsewhere
-	class MatchDelegate:NSObject, GKMatchDelegate {
-		var delegate:GameCenterMatchmakingProtocol
+	class MatchDelegate: NSObject, GKMatchDelegate {
+		var delegate: GameCenterMatchmakingProtocol
 
-		required init(withDelegate delegate:GameCenterMatchmakingProtocol) {	
+		required init(withDelegate delegate: GameCenterMatchmakingProtocol) {
 			self.delegate = delegate
 			super.init()
 		}
@@ -587,7 +630,7 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			delegate.match(match, player: player, didChange: state)
 		}
 
-		func match(_ match:GKMatch, didFailWithError error: Error?) {
+		func match(_ match: GKMatch, didFailWithError error: Error?) {
 			delegate.match(match, didFailWithError: error)
 		}
 
@@ -595,11 +638,16 @@ class GameCenterMultiplayerPeer:MultiplayerPeerExtension, GameCenterMatchmakingP
 			return delegate.match(match, shouldReinviteDisconnectedPlayer: player)
 		}
 
-		func match(_ match: GKMatch, didReceive data:Data, fromRemotePlayer player: GKPlayer) {
+		func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
 			delegate.match(match, didReceive: data, fromRemotePlayer: player)
 		}
 
-		func match(_ match: GKMatch, didReceive data: Data, forRecipient recipient: GKPlayer, fromRemotePlayer player: GKPlayer) {
+		func match(
+			_ match: GKMatch,
+			didReceive data: Data,
+			forRecipient recipient: GKPlayer,
+			fromRemotePlayer player: GKPlayer
+		) {
 			delegate.match(match, didReceive: data, forRecipient: recipient, fromRemotePlayer: player)
 		}
 	}

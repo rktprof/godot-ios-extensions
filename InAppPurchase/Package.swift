@@ -4,29 +4,29 @@
 import PackageDescription
 
 let package = Package(
-    name: "InAppPurchase",
+	name: "InAppPurchase",
 	platforms: [
 		.iOS(.v15),
-		.macOS(.v13)
+		.macOS(.v13),
 	],
-    products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "InAppPurchase",
+	products: [
+		// Products define the executables and libraries a package produces, making them visible to other packages.
+		.library(
+			name: "InAppPurchase",
 			type: .dynamic,
-            targets: ["InAppPurchase"]
-		),
-    ],
+			targets: ["InAppPurchase"]
+		)
+	],
 	dependencies: [
 		.package(name: "SwiftGodot", path: "../SwiftGodot")
 	],
-    targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "InAppPurchase",
+	targets: [
+		// Targets are the basic building blocks of a package, defining a module or a test suite.
+		// Targets can depend on other targets in this package and products from dependencies.
+		.target(
+			name: "InAppPurchase",
 			dependencies: ["SwiftGodot"],
 			swiftSettings: [.unsafeFlags(["-suppress-warnings"])]
-		),
-    ]
+		)
+	]
 )

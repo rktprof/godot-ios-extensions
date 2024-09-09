@@ -4,9 +4,9 @@ import GameKit
 import UIKit
 
 class GameCenterViewController: UIViewController, GKGameCenterControllerDelegate {
-	var onControllerClosed:Callable? = nil
+	var onControllerClosed: Callable? = nil
 
-	func showUIController(_ viewController:GKGameCenterViewController, onClose:Callable?) {
+	func showUIController(_ viewController: GKGameCenterViewController, onClose: Callable?) {
 		do {
 			// TODO: Make sure we don't try to open more than one view
 			onControllerClosed = onClose
@@ -18,7 +18,7 @@ class GameCenterViewController: UIViewController, GKGameCenterControllerDelegate
 	}
 
 	func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
-    	gameCenterViewController.dismiss(animated:true, completion: { self.onControllerClosed?.call() })
+		gameCenterViewController.dismiss(animated: true, completion: { self.onControllerClosed?.call() })
 	}
 
 	func getRootController() -> UIViewController? {
@@ -29,10 +29,10 @@ class GameCenterViewController: UIViewController, GKGameCenterControllerDelegate
 		// As seen on: https://sarunw.com/posts/how-to-get-root-view-controller/
 		// NOTE: Does not neccessarily show in the correct window if there are multiple windows
 		return UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive }
-            .first?.windows
-            .first(where: \.isKeyWindow)
+			.compactMap { $0 as? UIWindowScene }
+			.filter { $0.activationState == .foregroundActive }
+			.first?.windows
+			.first(where: \.isKeyWindow)
 	}
 }
 #endif

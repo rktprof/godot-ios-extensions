@@ -1,30 +1,32 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
-import SwiftGodot
 import StoreKit
+import SwiftGodot
 
-#initSwiftExtension(cdecl: "swift_entry_point", types: [
-	InAppPurchase.self,
-	IAPProduct.self
-])
-
+#initSwiftExtension(
+	cdecl: "swift_entry_point",
+	types: [
+		InAppPurchase.self,
+		IAPProduct.self,
+	]
+)
 
 public enum StoreError: Error {
-    case failedVerification
+	case failedVerification
 }
 
-let OK:Int = 0
+let OK: Int = 0
 
 @Godot
-class InAppPurchase:RefCounted {
-	enum InAppPurchaseStatus:Int {
+class InAppPurchase: RefCounted {
+	enum InAppPurchaseStatus: Int {
 		case purchaseOK = 0
 		case purchaseSuccessfulButUnverified = 2
 		case purchasePendingAuthorization = 3
 		case purchaseCancelledByUser = 4
 	}
-	enum InAppPurchaseError:Int, Error {
+	enum InAppPurchaseError: Int, Error {
 		case failedToGetProducts = 1
 		case purchaseFailed = 2
 		case noSuchProduct = 3
@@ -34,18 +36,18 @@ class InAppPurchase:RefCounted {
 	#signal("product_purchased", arguments: ["product_id": String.self])
 	#signal("product_revoked", arguments: ["product_id": String.self])
 
-	private(set) var productIdentifiers:[String] = []
+	private(set) var productIdentifiers: [String] = []
 
-	private(set) var products:[Product]
+	private(set) var products: [Product]
 	private(set) var purchasedProducts: Set<String> = Set<String>()
-	
+
 	var updateListenerTask: Task<Void, Error>? = nil
 
-	required init()	{
+	required init() {
 		products = []
 		super.init()
 	}
-	
+
 	required init(nativeHandle: UnsafeRawPointer) {
 		products = []
 		super.init(nativeHandle: nativeHandle)
@@ -56,11 +58,11 @@ class InAppPurchase:RefCounted {
 	}
 
 	@Callable
-	func initialize(_ productIdentifiers:[String]) {
+	func initialize(_ productIdentifiers: [String]) {
 		self.productIdentifiers = productIdentifiers
 
 		updateListenerTask = self.listenForTransactions()
-		
+
 		Task {
 			await updateProducts()
 			await updateProductStatus()
@@ -68,7 +70,7 @@ class InAppPurchase:RefCounted {
 	}
 
 	@Callable
-	func purchase(_ productIdentifier:String, onComplete:Callable) {
+	func purchase(_ productIdentifier: String, onComplete: Callable) {
 		Task {
 			do {
 				if let product: Product = try await getProduct(productIdentifier) {
@@ -83,12 +85,16 @@ class InAppPurchase:RefCounted {
 						break
 					case .pending:
 						// Transaction waiting on authentication or approval
-						onComplete.callDeferred(Variant(InAppPurchaseStatus.purchasePendingAuthorization.rawValue))
+						onComplete.callDeferred(
+							Variant(InAppPurchaseStatus.purchasePendingAuthorization.rawValue)
+						)
 						break
 					case .userCancelled:
 						// User cancelled the purchase
-						onComplete.callDeferred(Variant(InAppPurchaseStatus.purchaseCancelledByUser.rawValue))
-						break;
+						onComplete.callDeferred(
+							Variant(InAppPurchaseStatus.purchaseCancelledByUser.rawValue)
+						)
+						break
 					}
 				} else {
 					GD.pushError("IAP Product doesn't exist: \(productIdentifier)")
@@ -102,24 +108,24 @@ class InAppPurchase:RefCounted {
 	}
 
 	@Callable
-	func isPurchased(_ productID:String) -> Bool {
+	func isPurchased(_ productID: String) -> Bool {
 		return purchasedProducts.contains(productID)
 	}
 
 	@Callable
-	func getProducts(identifiers:[String], onComplete:Callable) {
+	func getProducts(identifiers: [String], onComplete: Callable) {
 		Task {
 			do {
 				let storeProducts: [Product] = try await Product.products(for: identifiers)
-				var products:GArray = GArray()
+				var products: GArray = GArray()
 
 				for storeProduct: Product in storeProducts {
-					var product:IAPProduct = IAPProduct()
+					var product: IAPProduct = IAPProduct()
 					product.displayName = storeProduct.displayName
 					product.displayPrice = storeProduct.displayPrice
 					product.storeDescription = storeProduct.description
 					product.productID = storeProduct.id
-					switch (storeProduct.type) {
+					switch storeProduct.type {
 					case .consumable:
 						product.type = IAPProduct.TYPE_CONSUMABLE
 					case .nonConsumable:
@@ -131,33 +137,38 @@ class InAppPurchase:RefCounted {
 					default:
 						product.type = IAPProduct.TYPE_UNKNOWN
 					}
-					
+
 					onComplete.callDeferred(Variant(OK), Variant(products))
 				}
 			} catch {
 				GD.pushError("Failed to get products from App Store, error: \(error)")
-				onComplete.callDeferred(Variant(InAppPurchaseError.failedToGetProducts.rawValue), Variant())
+				onComplete.callDeferred(
+					Variant(InAppPurchaseError.failedToGetProducts.rawValue),
+					Variant()
+				)
 			}
 		}
 	}
 
 	@Callable
-	func restorePurchases(onComplete:Callable) {
+	func restorePurchases(onComplete: Callable) {
 		Task {
 			do {
 				try await AppStore.sync()
 				onComplete.callDeferred(Variant(OK))
 			} catch {
 				GD.pushError("Failed to restore purchases: \(error)")
-				onComplete.callDeferred(Variant(InAppPurchaseError.failedToRestorePurchases.rawValue))
+				onComplete.callDeferred(
+					Variant(InAppPurchaseError.failedToRestorePurchases.rawValue)
+				)
 			}
 		}
 	}
 
 	// Internal functionality
 
-	func getProduct(_ productIdentifier:String) async throws -> Product? {
-		var product:[Product] = []
+	func getProduct(_ productIdentifier: String) async throws -> Product? {
+		var product: [Product] = []
 		do {
 			product = try await Product.products(for: ["identifier"])
 		} catch {
@@ -192,7 +203,7 @@ class InAppPurchase:RefCounted {
 		}
 	}
 
-	func checkVerified<T>(_ result:VerificationResult<T>) throws -> T {
+	func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
 		switch result {
 		case .unverified:
 			throw StoreError.failedVerification

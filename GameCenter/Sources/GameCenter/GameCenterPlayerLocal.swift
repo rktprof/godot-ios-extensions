@@ -1,19 +1,20 @@
-import SwiftGodot
 import GameKit
+import SwiftGodot
 
+/// Holds data from GKLocalPlayer in a Godot friendly format
 @Godot
-class GameCenterPlayerLocal:RefCounted {
-	@Export	var alias:String = ""
-	@Export	var displayName:String = ""
-	
-	@Export	var gamePlayerID:String = ""
-	@Export	var teamPlayerID:String = ""
-	
-	@Export	var isUnderage:Bool = false
-	@Export	var isMultiplayerGamingRestricted:Bool = false
-	@Export	var isPersonalizedCommunicationRestricted:Bool = false
+class GameCenterPlayerLocal: RefCounted {
+	@Export var alias: String = ""
+	@Export var displayName: String = ""
 
-	convenience init(_ player:GKLocalPlayer) {
+	@Export var gamePlayerID: String = ""
+	@Export var teamPlayerID: String = ""
+
+	@Export var isUnderage: Bool = false
+	@Export var isMultiplayerGamingRestricted: Bool = false
+	@Export var isPersonalizedCommunicationRestricted: Bool = false
+
+	convenience init(_ player: GKLocalPlayer) {
 		self.init()
 
 		alias = player.alias
