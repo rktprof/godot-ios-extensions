@@ -1,3 +1,5 @@
+#if canImport(CoreHaptics)
+
 import CoreHaptics
 import SwiftGodot
 
@@ -157,3 +159,4 @@ class Haptics: RefCounted {
 		}
 	}
 }
+#endif // CoreHaptics
