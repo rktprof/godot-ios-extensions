@@ -2,7 +2,8 @@
 
 # Basic build script to help with building extensions
 
-SWIFT_PATH="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift"
+SWIFT_PATH="swift"
+#SWIFT_PATH="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift"
 
 TRIPLE_IOS="arm64-apple-ios"
 TRIPLE_MACOS="arm64-apple-macosx"
@@ -28,9 +29,9 @@ fi
 
 
 if [[ ! $PROJECT ]]; then
-	echo 
+	echo
 	echo "Syntax: build [-f] <project> <platform?> <config?>"
-	echo 
+	echo
 	echo "-f force copy SwiftGodot library even if it exists"
 	echo "	Useful if you have updated the SwiftGodot version"
 	echo "<project> is the project folder to build. eg GameCenter"
@@ -104,7 +105,7 @@ build_macos_xcode() {
 
 	build_path="$1/.build/$TRIPLE_MACOS"
 	cache_path="$1/.build"
-	
+
 	if (( $+commands[xcbeautify] )); then
 		set -o pipefail && xcodebuild \
 			-workspace "$1/" \
@@ -128,7 +129,7 @@ build_macos_xcode() {
 			echo "${BOLD}${GREEN}Build Succeeded${RESET_FORMATTING}"
 		fi
 	fi
-	
+
 	if [[ $? -gt 0 ]]; then
 		echo "${BOLD}${RED}Building $1 for macOS failed${RESET_FORMATTING}"
 		return 1
@@ -152,14 +153,14 @@ build_macos() {
 	cache_path="$1/.build"
 
 	if (( $+commands[xcbeautify] )); then
-		set -o pipefail && "${SWIFT_PATH}" build \
+		set -o pipefail && ${SWIFT_PATH} build \
 			--package-path "$1" \
 			--configuration "$2" \
 			--triple "$TRIPLE_MACOS" \
 			--scratch-path "$build_path" \
 			--cache-path "$cache_path" #| xcbeautify
 	else
-		"${SWIFT_PATH}" build \
+		${SWIFT_PATH} build \
 			--package-path "$1" \
 			--configuration "$2" \
 			--triple "$TRIPLE_MACOS" \
@@ -171,7 +172,7 @@ build_macos() {
 		echo "${BOLD}${RED}Building $1 for macOS failed${RESET_FORMATTING}"
 		return 1
 	fi
-	
+
 	echo "${BOLD}${GREEN}Build Succeeded${RESET_FORMATTING}"
 
 	product_path="$build_path/$TRIPLE_MACOS/$2"
@@ -187,7 +188,7 @@ build_macos() {
 
 build_libs() {
 	echo "Building $1 $3 libraries for $2 platforms"
-	
+
 	if [[ "$2" == "all" || "$2" == "macos" ]]; then
 		build_macos "$1" "$3"
 	fi
@@ -201,7 +202,7 @@ build_libs() {
 		for instruction in ${COPY_COMMANDS[@]}
 		do
 			# This is not ideal as it won't handle spaces in paths
-			# However, there shouldn't be any since the path is relative 
+			# However, there shouldn't be any since the path is relative
 			target=${instruction##* }
 			if ! [[ -e "$target" ]]; then
 				mkdir -p "$target"
