@@ -25,7 +25,7 @@ class LocalNetworkListener: RefCounted {
 
 			self.listener = listener
 		} catch {
-			GD.pushError("Failed to start LocalNetworkListener: \(error.localizedDescription)")
+			GD.pushError("Failed to start LocalNetworkListener: \(error)")
 		}
 	}
 
@@ -44,7 +44,7 @@ class LocalNetworkListener: RefCounted {
 				"LocalNetworkListener listening on \(self.listener.debugDescription), port \(self.listener?.port?.debugDescription)"
 			)
 		case .failed(let error):
-			GD.print("LocalNetworkListener failed, error: \(error.localizedDescription)")
+			GD.print("LocalNetworkListener failed, error: \(error)")
 		default:
 			break
 		}

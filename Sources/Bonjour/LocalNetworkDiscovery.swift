@@ -124,7 +124,7 @@ class LocalNetworkDiscovery: RefCounted {
 	func stateChanged(to newState: NWBrowser.State) {
 		switch newState {
 		case .failed(let error):
-			GD.pushError("LocalNetworkDiscovery failed: \(error.localizedDescription)")
+			GD.pushError("LocalNetworkDiscovery failed: \(error)")
 		default:
 			break
 		}
