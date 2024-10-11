@@ -5,8 +5,13 @@ let OK: Int = 0
 
 @Godot
 class LocalNetworkDiscovery: RefCounted {
+	/// Signal that triggers when a device is discovered
+	///
+	/// > NOTE: If you need the address of the device you can use `resolveEndpoint` with the hash_value
 	#signal("device_discovered", arguments: ["name": String.self, "port": Int.self, "hash_value": Int.self])
+	/// Signal that triggers when a device is lost
 	#signal("device_lost", arguments: ["name": String.self, "hash_value": Int.self])
+	/// Signal that triggers when a device is updated
 	#signal(
 		"device_updated",
 		arguments: ["name": String.self, "port": Int.self, "old_hash_value": Int.self, "new_hash_value": Int.self]
@@ -25,6 +30,10 @@ class LocalNetworkDiscovery: RefCounted {
 		stop()
 	}
 
+	/// Start looking for Bonjour devices on the local network.
+	///
+	/// - Parameter:
+	/// 	- typeDescriptor: A service descriptor used to discover a Bonjour service.
 	@Callable
 	func start(typeDescriptor: String) {
 		GD.print("Starting LocalNetworkDiscovery for \(typeDescriptor)...")
@@ -41,6 +50,7 @@ class LocalNetworkDiscovery: RefCounted {
 		self.browser = browser
 	}
 
+	/// Stop looking for Bonjour devices
 	@Callable
 	func stop() {
 		if browser == nil {
@@ -54,6 +64,11 @@ class LocalNetworkDiscovery: RefCounted {
 		GD.print("LocalNetworkDiscovery stopped")
 	}
 
+	/// Resolve a Bonjour endpoint into an ip address and port.
+	///
+	/// - Parameters:
+	///		- hashValue: The hash value for the discovered bonjour service.
+	///		- onComplete: Callback with parameter: (error: Variant, address: Variant, port: Variant) -> (error: Int, address: String, port: Int)
 	@Callable
 	func resolveEndpoint(hashValue: Int, onComplete: Callable) {
 		// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
@@ -124,7 +139,7 @@ class LocalNetworkDiscovery: RefCounted {
 	func stateChanged(to newState: NWBrowser.State) {
 		switch newState {
 		case .failed(let error):
-			GD.pushError("LocalNetworkDiscovery failed: \(error.localizedDescription)")
+			GD.pushError("LocalNetworkDiscovery failed: \(error)")
 		default:
 			break
 		}

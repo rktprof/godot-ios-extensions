@@ -27,8 +27,14 @@ class GameCenterAchievements: RefCounted {
 
 	// MARK: Godot functions
 
+	/// Set Achievement progress.
+	///
+	/// - Parameters:
+	/// 	- achievementID: The identifier for the achievement that you enter in App Store Connect.
+	/// 	- achievementProgress: A percentage value that states how far the player has progressed on the achievement. (0.0 - 100.0)
+	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int)
 	@Callable
-	func setAchievementProgress(achievementID: String, achievementProgress: Double, onComplete: Callable) {
+	func setAchievementProgress(achievementID: String, achievementProgress: Float, onComplete: Callable) {
 		Task {
 			do {
 				if !hasLoadedAchievements {
@@ -43,7 +49,7 @@ class GameCenterAchievements: RefCounted {
 					achievements.append(achievement!)
 				}
 
-				achievement?.percentComplete = achievementProgress
+				achievement?.percentComplete = Double(achievementProgress)
 
 				onComplete.callDeferred(Variant(OK))
 			} catch {
@@ -53,6 +59,11 @@ class GameCenterAchievements: RefCounted {
 		}
 	}
 
+	/// Get Achievement progress.
+	///
+	/// - Parameters:
+	/// 	- achievementID: The identifier for the achievement that you enter in App Store Connect.
+	/// 	- onComplete: Callback with parameter: (error: Variant, progress: Variant) -> (error: Int, progress: Float)
 	@Callable
 	func getAchievementProgress(achievementID: String, onComplete: Callable) {
 		Task {
@@ -77,6 +88,10 @@ class GameCenterAchievements: RefCounted {
 		}
 	}
 
+	/// Reports the player’s Achievement progress.
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int)
 	@Callable
 	func reportAchievementProgress(onComplete: Callable) {
 		Task {
@@ -98,6 +113,10 @@ class GameCenterAchievements: RefCounted {
 		}
 	}
 
+	/// Reports the player’s progress of players toward one or more achievements.
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameters: (error: Variant, achievements: Variant) -> (error: Int, achievements: [``GameCenterAchievement``])
 	@Callable
 	func getAchievements(onComplete: Callable) {
 		Task {
@@ -121,12 +140,12 @@ class GameCenterAchievements: RefCounted {
 					achievement.isHidden = entry.isHidden
 					achievement.isReplayable = entry.isReplayable
 					if #available(iOS 17, macOS 14, *) {
-						achievement.rarityPercent = entry.rarityPercent
+						achievement.rarityPercent = Float(entry.rarityPercent ?? 0)
 					}
 
 					// Apply completion data if any is available
 					if let completion = achievements.first(where: { $0.identifier == entry.identifier }) {
-						achievement.percentComplete = completion.percentComplete
+						achievement.percentComplete = Float(completion.percentComplete)
 						achievement.isCompleted = completion.isCompleted
 					}
 
@@ -141,6 +160,10 @@ class GameCenterAchievements: RefCounted {
 		}
 	}
 
+	/// Resets the percentage completed for all of the player’s achievements.
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameters: (error: Variant) -> (error: Int)
 	@Callable
 	func resetAchievements(onComplete: Callable) {
 		Task {
@@ -153,6 +176,10 @@ class GameCenterAchievements: RefCounted {
 		}
 	}
 
+	/// Show GameCenter achievements overlay.
+	///
+	/// - Parameters:
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showAchievements(onClose: Callable) {
 		#if os(iOS)
@@ -160,6 +187,11 @@ class GameCenterAchievements: RefCounted {
 		#endif
 	}
 
+	/// Show GameCenter achievements overlay with a specific achievement.
+	///
+	/// - Parameters:
+	/// 	- achievementID: The identifier for the achievement that you enter in App Store Connect.
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showAchievement(achievementdID: String, onClose: Callable) {
 		#if os(iOS)

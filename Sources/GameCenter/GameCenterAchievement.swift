@@ -1,5 +1,6 @@
 import SwiftGodot
 
+/// Holds Achievement data in a Godot friendly format
 @Godot
 class GameCenterAchievement: RefCounted {
 	@Export var identifier: String = ""
@@ -12,9 +13,9 @@ class GameCenterAchievement: RefCounted {
 	@Export var isHidden: Bool = false
 	@Export var isReplayable: Bool = false
 
-	@Export var percentComplete: Double = 0
+	@Export var percentComplete: Float = 0.0
 	@Export var isCompleted: Bool = false
 
-	@Export var rarityPercent: Double?
+	@Export var rarityPercent: Float?
 	@Export var image: Image?
 }

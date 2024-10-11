@@ -6,8 +6,11 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	let HOST_ID: Int32 = 1
 	let RESERVED_CHANNELS: Int32 = 2
 
+	/// Called when a match is finalized
 	#signal("server_created")
+	/// Called when the `MatchmakingStatus` changes
 	#signal("matchmaking_status_updated", arguments: ["status": Int.self])
+	/// Called when `InviteStatus` is updated
 	#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
 
 	enum Mode: Int {
@@ -15,12 +18,14 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		case server, client, mesh
 	}
 
+	/// MatchmakingStatus
 	enum MatchmakingStatus: Int {
 		case successful = 0
 		case failed = 1
 		case timeout = 2
 	}
 
+	/// InviteStatus
 	enum InviteStatus: Int {
 		case accepted = 0
 		case declined = 1
@@ -72,7 +77,10 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 	// MARK: Godot functions
 
-	/// Send invites to players
+	/// Start a game by inviting players
+	///
+	/// - Parameters:
+	/// 	- playerIDs: An array of playerIDs to invite
 	@Callable
 	func invitePlayers(playerIDs: [String]) {
 		Task {
@@ -81,7 +89,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			}
 
 			isMatching = true
-			connectionStatus = MultiplayerPeer.ConnectionStatus.connecting
+			connectionStatus = .connecting
 
 			// Generate PeerData
 			// Note that generateUniqueID generates a UInt32 but they always request an Int32, so it's potentially
@@ -117,6 +125,12 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	/// Join a game recieved through an invite
+	///
+	/// > NOTE: You need to listen to the ``invite_received`` signal in the GameCenter class
+	/// 		in order to get the invite index.
+	///
+	/// - Parameters:
+	/// 	- inviteIndex: The index of the invite you wish to join.
 	@Callable
 	func joinGame(inviteIndex: Int) {
 		Task {
@@ -159,6 +173,12 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	/// Start matchmaking
+	///
+	/// - Parameters:
+	/// 	- minPlayers: The minimum amount of players required to start a game.
+	/// 	- maxPlayers: The maximum amount of players.
+	/// 	- playerGroup: A number identifying a subset of players invited to join a match. This number must match for players to find eachother
+	/// 	- playerAttributes: A mask that specifies the role that the local player would like to play in the game.
 	@Callable
 	func startMatchmaking(minPlayers: Int, maxPlayers: Int, playerGroup: Int, playerAttributes: Int) {
 		Task {
@@ -208,12 +228,16 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	/// Cancel matchmaking
 	@Callable
 	func stopMatchmaking() {
-		if isMatching {
-			isMatching = false
-			GKMatchmaker.shared().cancel()
-		}
+		isMatching = false
+		GKMatchmaker.shared().cancel()
 	}
 
+	/// Get current player activity
+	///
+	/// Finds the number of players, across player groups, who recently requested a match.
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameter: (error: Variant, players: Variant) -> (error: Int, players: Int)
 	@Callable
 	func getPlayerActivity(onComplete: Callable) {
 		Task {
@@ -230,6 +254,9 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		}
 	}
 
+	/// Get the current localPlayerID
+	///
+	/// - Returns: The local player ID, or 0 if nothing is found
 	@Callable
 	func getLocalPlayerID() -> Int {
 		return Int(getPeerID(for: GKLocalPlayer.local) ?? 0)
@@ -245,6 +272,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		GD.print("[Matchmaking] Closing connection...")
 		stopMatchmaking()
 		match?.disconnect()
+		match = nil
 		incomingPackets.removeAll()
 		currentPacket = nil
 		clearPeers()

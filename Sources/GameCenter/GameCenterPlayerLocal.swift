@@ -1,7 +1,7 @@
 import GameKit
 import SwiftGodot
 
-/// Holds data from GKLocalPlayer in a Godot friendly format
+/// Holds local player data in a Godot friendly format
 @Godot
 class GameCenterPlayerLocal: RefCounted {
 	@Export var alias: String = ""

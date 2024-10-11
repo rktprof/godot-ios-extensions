@@ -18,6 +18,12 @@ class GameCenterLeaderboards: RefCounted {
 
 	// MARK: Godot functions
 
+	/// Submit leadboard score.
+	///
+	/// - Parameters:
+	/// 	- score: The score to submit-
+	/// 	- leaderboardIDs: An array of leaderboard identifiers that you enter in App Store Connect.
+	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int)
 	@Callable
 	func submitScore(score: Int, leaderboardIDs: [String], onComplete: Callable) {
 		Task {
@@ -36,6 +42,13 @@ class GameCenterLeaderboards: RefCounted {
 		}
 	}
 
+	/// Get global leaderboard.
+	///
+	/// - Parameters:
+	/// 	- leaderboardIDs: The identifier for the leaderboard that you enter in App Store Connect.
+	///		- start: The start of the range to load
+	/// 	- length: How many entires to load (max: 100)
+	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
 	@Callable
 	func getGlobalScores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
@@ -49,6 +62,13 @@ class GameCenterLeaderboards: RefCounted {
 		)
 	}
 
+	/// Get friends leaderboard.
+	///
+	/// - Parameters:
+	/// 	- leaderboardIDs: The identifier for the leaderboard that you enter in App Store Connect.
+	///		- start: The start of the range to load
+	/// 	- length: How many entires to load (max: 100)
+	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
 	@Callable
 	func getFriendsScores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
@@ -62,6 +82,13 @@ class GameCenterLeaderboards: RefCounted {
 		)
 	}
 
+	/// Get the previous occurance of a recurring global leaderboard.
+	///
+	/// - Parameters:
+	/// 	- leaderboardIDs: The identifier for the leaderboard that you enter in App Store Connect.
+	///		- start: The start of the range to load
+	/// 	- length: How many entires to load (max: 100)
+	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
 	@Callable
 	func getPreviousOccurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
@@ -75,6 +102,13 @@ class GameCenterLeaderboards: RefCounted {
 		)
 	}
 
+	/// Get the previous occurance of a recurring friends leaderboard.
+	///
+	/// - Parameters:
+	/// 	- leaderboardIDs: The identifier for the leaderboard that you enter in App Store Connect.
+	///		- start: The start of the range to load
+	/// 	- length: How many entires to load (max: 100)
+	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
 	@Callable
 	func getPreviousFriendsOccurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
@@ -88,6 +122,10 @@ class GameCenterLeaderboards: RefCounted {
 		)
 	}
 
+	/// Show GameCenter leaderboards overlay.
+	///
+	/// - Parameters:
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showLeaderboards(onClose: Callable) {
 		#if os(iOS)
@@ -95,6 +133,11 @@ class GameCenterLeaderboards: RefCounted {
 		#endif
 	}
 
+	/// Show GameCenter leaderboard overlay for a specific leaderboard.
+	///
+	/// - Parameters:
+	/// 	- leaderboardID: The identifier for the leaderboard that you enter in App Store Connect.
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showLeaderboard(leaderboardID: String, onClose: Callable) {
 		#if os(iOS)

@@ -1,6 +1,7 @@
 import GameKit
 import SwiftGodot
 
+/// Holds Leaderboard data in a Godot friendly format
 @Godot
 class GameCenterLeaderboardEntry: RefCounted {
 	@Export var rank: Int = 0
@@ -9,7 +10,7 @@ class GameCenterLeaderboardEntry: RefCounted {
 	@Export var score: Int = 0
 	@Export var formattedScore: String = ""
 
-	@Export var date: Double = 0.0
+	@Export var date: Float = 0.0
 
 	@Export var image: Image?
 

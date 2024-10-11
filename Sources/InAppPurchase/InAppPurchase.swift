@@ -32,11 +32,18 @@ class InAppPurchase: RefCounted {
 		case noSuchProduct = 3
 		case failedToRestorePurchases = 4
 	}
+	enum AppTransactionError: Int, Error {
+		case ok = 0
+		case unverified = 1
+		case error = 2
+	}
 
+	/// Called when a product is puchased
 	#signal("product_purchased", arguments: ["product_id": String.self])
+	/// Called when a purchase is revoked
 	#signal("product_revoked", arguments: ["product_id": String.self])
 
-	private(set) var productIdentifiers: [String] = []
+	private(set) var productIDs: [String] = []
 
 	private(set) var products: [Product]
 	private(set) var purchasedProducts: Set<String> = Set<String>()
@@ -57,9 +64,13 @@ class InAppPurchase: RefCounted {
 		updateListenerTask?.cancel()
 	}
 
+	/// Initialize purchases
+	///
+	/// - Parameters:
+	/// 	- productIdentifiers: An array of product identifiers that you enter in App Store Connect.
 	@Callable
-	func initialize(_ productIdentifiers: [String]) {
-		self.productIdentifiers = productIdentifiers
+	func initialize(productIDs: [String]) {
+		self.productIDs = productIDs
 
 		updateListenerTask = self.listenForTransactions()
 
@@ -69,11 +80,16 @@ class InAppPurchase: RefCounted {
 		}
 	}
 
+	/// Purchase a product
+	///
+	/// - Parameters:
+	/// 	- productID: The identifier of the product that you enter in App Store Connect.
+	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int `InAppPurchaseStatus`)
 	@Callable
-	func purchase(_ productIdentifier: String, onComplete: Callable) {
+	func purchase(_ productID: String, onComplete: Callable) {
 		Task {
 			do {
-				if let product: Product = try await getProduct(productIdentifier) {
+				if let product: Product = try await getProduct(productID) {
 					let result: Product.PurchaseResult = try await product.purchase()
 					switch result {
 					case .success(let verification):
@@ -97,7 +113,7 @@ class InAppPurchase: RefCounted {
 						break
 					}
 				} else {
-					GD.pushError("IAP Product doesn't exist: \(productIdentifier)")
+					GD.pushError("IAP Product doesn't exist: \(productID)")
 					onComplete.callDeferred(Variant(InAppPurchaseError.noSuchProduct.rawValue))
 				}
 			} catch {
@@ -107,11 +123,22 @@ class InAppPurchase: RefCounted {
 		}
 	}
 
+	/// Check if a product is purchased
+	///
+	/// - Parameters:
+	/// 	- productID: The identifier of the product that you enter in App Store Connect.,
+	///
+	/// - Returns: True if a product is purchased
 	@Callable
 	func isPurchased(_ productID: String) -> Bool {
 		return purchasedProducts.contains(productID)
 	}
 
+	/// Get products
+	///
+	/// - Parameters:
+	/// 	- identifiers: An array of product identifiers that you enter in App Store Connect.
+	/// 	- onComplete: Callback with parameters: (error: Variant, products: Variant) -> (error: Int, products: [``IAPProduct``])
 	@Callable
 	func getProducts(identifiers: [String], onComplete: Callable) {
 		Task {
@@ -150,6 +177,9 @@ class InAppPurchase: RefCounted {
 		}
 	}
 
+	/// Restore purchases
+	///
+	/// - Parameter onComplete: Callback with parameter: (error: Variant) -> (error: Int)
 	@Callable
 	func restorePurchases(onComplete: Callable) {
 		Task {
@@ -162,6 +192,69 @@ class InAppPurchase: RefCounted {
 					Variant(InAppPurchaseError.failedToRestorePurchases.rawValue)
 				)
 			}
+		}
+	}
+
+	/// Get the current app environment
+	///
+	/// NOTE: On iOS 16 this might display a system prompt that asks users to authenticate
+	///
+	/// - Parameter onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: String)
+	@Callable
+	public func getEnvironment(onComplete: Callable) {
+		if #available(iOS 16.0, *) {
+			Task {
+				do {
+					let result = try await AppTransaction.shared
+					switch result {
+					case .verified(let appTransaction):
+						onComplete.callDeferred(
+							Variant(AppTransactionError.ok.rawValue),
+							Variant(appTransaction.environment.rawValue)
+						)
+					case .unverified(let appTransaction, let verificationError):
+						onComplete.callDeferred(
+							Variant(AppTransactionError.unverified.rawValue),
+							Variant(appTransaction.environment.rawValue)
+						)
+					}
+				} catch {
+					GD.print("Failed to get appTransaction, error: \(error)")
+					onComplete.callDeferred(Variant(AppTransactionError.error.rawValue), Variant(""))
+				}
+			}
+		} else {
+			guard let path = Bundle.main.appStoreReceiptURL?.path else {
+				onComplete.callDeferred(Variant(AppTransactionError.error.rawValue), Variant(""))
+				return
+			}
+
+			if path.contains("CoreSimulator") {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("xcode"))
+			} else if path.contains("sandboxReceipt") {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("sandbox"))
+			} else {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("production"))
+			}
+		}
+	}
+
+	/// Refresh the App Store signed app transaction (only iOS 16+)
+	///
+	/// NOTE: This will display a system prompt that asks users to authenticate
+	@Callable
+	public func refreshAppTransaction(onComplete: Callable) {
+		if #available(iOS 16.0, *) {
+			Task {
+				do {
+					try await AppTransaction.refresh()
+					onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue))
+				} catch {
+					onComplete.callDeferred(Variant(AppTransactionError.unverified.rawValue))
+				}
+			}
+		} else {
+			onComplete.callDeferred(Variant(OK))
 		}
 	}
 
@@ -180,7 +273,7 @@ class InAppPurchase: RefCounted {
 
 	func updateProducts() async {
 		do {
-			let storeProducts = try await Product.products(for: productIdentifiers)
+			let storeProducts = try await Product.products(for: productIDs)
 			products = storeProducts
 		} catch {
 			GD.pushError("Failed to get products from App Store: \(error)")
