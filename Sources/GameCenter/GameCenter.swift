@@ -32,6 +32,7 @@ enum GameCenterError: Int, Error {
 
 @Godot
 class GameCenter: RefCounted, GKInviteEventListener {
+	/// Signal called when an invite is recieved
 	#signal("invite_received", arguments: ["from": String.self, "index": Int.self])
 
 	#if os(iOS)
@@ -60,17 +61,11 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	// MARK: Authentication
 
 	/// Authenticate with gameCenter.
-	/// Usage:
-	/// ```python
-	///	game_center.authenticate(func(error: Variant, data: Variant) -> void:
-	/// 	if error == OK:
-	///			print("Authenticated as %s" % data.displayName)
-	///	)
-	///	```
 	///
-	/// - Parameter onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
 	@Callable
-	func authenticate(onComplete: Callable = Callable()) {
+	public func authenticate(onComplete: Callable = Callable()) {
 		if GKLocalPlayer.local.isAuthenticated && self.player != nil {
 			onComplete.call(Variant(OK), Variant(self.player!))
 			return
@@ -163,15 +158,9 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	/// Load the profile picture of the authenticated player.
-	/// Usage:
-	/// ```python
-	///	game_center.loadProfilePicture(func(error: Variant, data: Variant) -> void:
-	/// 	if error == OK:
-	///			player.photo = data as Image
-	///	)
-	///	```
 	///
-	/// - Parameter onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: Image)
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: Image)
 	@Callable
 	func loadProfilePicture(onComplete: Callable) {
 		Task {
@@ -189,16 +178,9 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	// MARK: Friends
 
 	/// Load the friends of the authenticated player.
-	/// Usage:
-	/// ```python
-	///	game_center.loadFriends(func(error: Variant, friends: Variant) -> void:
-	///		if error == OK:
-	///			for friend: Variant in friends:
-	///				print("Found friend: %s" % friend.displayName)
-	///	)
-	///	```
 	///
-	/// - Parameter onComplete: Callback with parameters: (error: Variant, friends: Variant) -> (error: Int, friends: [``GameCenterPlayer``])
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameters: (error: Variant, friends: Variant) -> (error: Int, friends: [``GameCenterPlayer``])
 	@Callable
 	func loadFriends(onComplete: Callable) {
 		Task {
@@ -222,15 +204,9 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 	/// Load the profile picture of the given gamePlayerID.
 	/// > NOTE: Only works on friends
-	/// Usage:
-	/// ```python
-	///	game_center.loadFriends(func(error: Variant, data: Variant) -> void:
-	///		if error == OK:
-	///			var friendPhoto:Image = data as Image
-	///	)
-	///	```
 	///
-	/// - Parameter onComplete: Callback with parameters: (error: Variant, data: Variant) -> (error: Int, data: Image)
+	/// - Parameters
+	/// 	- onComplete: Callback with parameters: (error: Variant, data: Variant) -> (error: Int, data: Image)
 	@Callable
 	func loadFriendPicture(gamePlayerID: String, onComplete: Callable) {
 		if friends == nil {
@@ -249,6 +225,23 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		}
 	}
 
+	/// Check for permission to load friends.
+	///
+	/// Usage:
+	/// ```python
+	///	game_center.canAccessFriends(func(error: Variant, data: Variant) -> void:
+	///		if error == OK:
+	///			var friendPhoto:Image = data as Image
+	///	)
+	///	```
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameters: (error: Variant, status: Variant) -> (error: Int, status: Int)
+	/// 	Possible status types:
+	/// 		- notDetermined = 0
+	/// 		- restricted = 1
+	/// 		- denied = 2
+	/// 		- authorized = 3
 	@Callable
 	func canAccessFriends(onComplete: Callable) {
 		Task {
@@ -264,6 +257,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 	// MARK: UI Overlays
 
+	/// Show GameCenter dashboard overlay.
+	///
+	/// - Parameters:
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showOverlay(onClose: Callable) {
 		#if canImport(UIKit)
@@ -271,6 +268,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		#endif
 	}
 
+	/// Show GameCenter friends overlay.
+	///
+	/// - Parameters:
+	/// 	- onClose: Called when the user closes the overlay.
 	@Callable
 	func showFriendsOverlay(onClose: Callable) {
 		#if canImport(UIKit)
@@ -278,6 +279,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		#endif
 	}
 
+	/// Show GameCenter access point.
+	///
+	/// - Parameters:
+	/// 	- showHighlights: A Boolean value that indicates whether to display highlights for achievements and current ranks for leaderboards.
 	@Callable
 	func showAccessPoint(showHighlights: Bool) {
 		GKAccessPoint.shared.location = .topTrailing
@@ -285,6 +290,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		GKAccessPoint.shared.isActive = true
 	}
 
+	/// Hide GameCenter access point.
 	@Callable
 	func hideAccessPoint() {
 		GKAccessPoint.shared.isActive = false

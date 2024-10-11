@@ -21,6 +21,7 @@ let HAPTIC_STOP_REASON_UNKNOWN_ERROR: Int = 7
 @Godot
 class Haptics: RefCounted {
 
+	/// Called when the Haptic engine stops
 	#signal("engine_stopped", arguments: ["reason": Int.self])
 
 	var isHapticsSupported: Bool = false
@@ -56,6 +57,11 @@ class Haptics: RefCounted {
 
 	// MARK: Godot functions
 
+	/// Play a single tap.
+	///
+	/// - Parameters:
+	/// 	- sharpness: The feel of the haptic event.
+	/// 	- intensity: The strength of the haptic event.
 	@Callable
 	func playTap(sharpness: Float, intensity: Float) {
 		if !isHapticsSupported {
@@ -82,6 +88,12 @@ class Haptics: RefCounted {
 		}
 	}
 
+	/// Play a longer haptic event.
+	///
+	/// - Parameters:
+	/// 	- sharpness: The feel of the haptic event.
+	/// 	- intensity: The strength of the haptic event.
+	/// 	- duration: The duration of the haptic event.
 	@Callable
 	func playEvent(sharpness: Float, intensity: Float, duration: Float) {
 		if !isHapticsSupported {
@@ -109,7 +121,7 @@ class Haptics: RefCounted {
 		}
 	}
 
-
+	/// - Returns: True if the device supports Haptics
 	@Callable
 	func supportsHaptics() -> Bool {
 		CHHapticEngine.capabilitiesForHardware().supportsHaptics
@@ -159,4 +171,4 @@ class Haptics: RefCounted {
 		}
 	}
 }
-#endif // CoreHaptics
+#endif  // CoreHaptics

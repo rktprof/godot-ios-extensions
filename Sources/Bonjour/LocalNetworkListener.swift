@@ -10,10 +10,17 @@ class LocalNetworkListener: RefCounted {
 		stop()
 	}
 
+	/// Start listening for incoming network connections.
+	///
+	/// - Parameter:
+	/// 	- typeDescriptor: A service descriptor used to identify a Bonjour service.
+	/// 	- name: The name that will show up when this device is discovered.
+	/// 	- port: The port that will accept connections.
+	/// 	- broadcastPort: The port that will be used to listen for connections (Default: 64201)
 	@Callable
-	func start(typeDescriptor: String, name: String, port: Int, broadcast_port: Int = DEFAULT_PORT) {
+	func start(typeDescriptor: String, name: String, port: Int, broadcastPort: Int = DEFAULT_PORT) {
 		do {
-			let broadcast_port: NWEndpoint.Port? = NWEndpoint.Port(rawValue: UInt16(broadcast_port))
+			let broadcast_port: NWEndpoint.Port? = NWEndpoint.Port(rawValue: UInt16(broadcastPort))
 			let listener: NWListener = try NWListener(using: .tcp, on: broadcast_port!)
 			listener.service = .init(name: name, type: typeDescriptor, txtRecord: NWTXTRecord(["port": String(port)]))
 
@@ -29,6 +36,7 @@ class LocalNetworkListener: RefCounted {
 		}
 	}
 
+	/// Stop listening for incoming network connections.
 	@Callable
 	func stop() {
 		listener?.stateUpdateHandler = nil
