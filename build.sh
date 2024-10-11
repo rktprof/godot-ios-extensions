@@ -50,8 +50,8 @@ build_ios() {
 
 	product_path="$BUILD_PATH_IOS/Build/Products/$1-iphoneos/PackageFrameworks"
 	source_path="Sources"
-	for folder in $source_path/*; do
-		COPY_COMMANDS+=("cp -af ""$product_path/$folder:t:r.framework ""$BINARY_PATH_IOS")
+	for source in $source_path/*; do
+		COPY_COMMANDS+=("cp -af ""$product_path/$source:t:r.framework ""$BINARY_PATH_IOS")
 	done
 	
 	COPY_COMMANDS+=("cp -af ""$product_path/SwiftGodot.framework ""$BINARY_PATH_IOS")
