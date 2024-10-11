@@ -32,6 +32,11 @@ class InAppPurchase: RefCounted {
 		case noSuchProduct = 3
 		case failedToRestorePurchases = 4
 	}
+	enum AppTransactionError: Int, Error {
+		case ok = 0
+		case unverified = 1
+		case error = 2
+	}
 
 	/// Called when a product is puchased
 	#signal("product_purchased", arguments: ["product_id": String.self])
@@ -187,6 +192,69 @@ class InAppPurchase: RefCounted {
 					Variant(InAppPurchaseError.failedToRestorePurchases.rawValue)
 				)
 			}
+		}
+	}
+
+	/// Get the current app environment
+	///
+	/// NOTE: On iOS 16 this might display a system prompt that asks users to authenticate
+	///
+	/// - Parameter onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: String)
+	@Callable
+	public func getEnvironment(onComplete: Callable) {
+		if #available(iOS 16.0, *) {
+			Task {
+				do {
+					let result = try await AppTransaction.shared
+					switch result {
+					case .verified(let appTransaction):
+						onComplete.callDeferred(
+							Variant(AppTransactionError.ok.rawValue),
+							Variant(appTransaction.environment.rawValue)
+						)
+					case .unverified(let appTransaction, let verificationError):
+						onComplete.callDeferred(
+							Variant(AppTransactionError.unverified.rawValue),
+							Variant(appTransaction.environment.rawValue)
+						)
+					}
+				} catch {
+					GD.print("Failed to get appTransaction, error: \(error)")
+					onComplete.callDeferred(Variant(AppTransactionError.error.rawValue), Variant(""))
+				}
+			}
+		} else {
+			guard let path = Bundle.main.appStoreReceiptURL?.path else {
+				onComplete.callDeferred(Variant(AppTransactionError.error.rawValue), Variant(""))
+				return
+			}
+
+			if path.contains("CoreSimulator") {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("xcode"))
+			} else if path.contains("sandboxReceipt") {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("sandbox"))
+			} else {
+				onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue), Variant("production"))
+			}
+		}
+	}
+
+	/// Refresh the App Store signed app transaction (only iOS 16+)
+	///
+	/// NOTE: This will display a system prompt that asks users to authenticate
+	@Callable
+	public func refreshAppTransaction(onComplete: Callable) {
+		if #available(iOS 16.0, *) {
+			Task {
+				do {
+					try await AppTransaction.refresh()
+					onComplete.callDeferred(Variant(AppTransactionError.ok.rawValue))
+				} catch {
+					onComplete.callDeferred(Variant(AppTransactionError.unverified.rawValue))
+				}
+			}
+		} else {
+			onComplete.callDeferred(Variant(OK))
 		}
 	}
 

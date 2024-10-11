@@ -35,17 +35,10 @@ let package = Package(
 			type: .dynamic,
 			targets: ["InAppPurchase"]
 		),
-		.library(
-			name: "Utils",
-			type: .dynamic,
-			targets: ["Utils"]
-		),
 	],
 
 	// MARK: Dependencies
 	dependencies: [
-		//.package(url: "https://github.com/migueldeicaza/SwiftGodot.git", from: "0.45.0")
-		//.package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.3.0"),
 		.package(name: "SwiftGodot", path: "SwiftGodot")
 	],
 
@@ -68,11 +61,6 @@ let package = Package(
 		),
 		.target(
 			name: "InAppPurchase",
-			dependencies: ["SwiftGodot"],
-			swiftSettings: swiftSettings
-		),
-		.target(
-			name: "Utils",
 			dependencies: ["SwiftGodot"],
 			swiftSettings: swiftSettings
 		),
