@@ -32,12 +32,17 @@ extension GameCenterMultiplayerPeer {
 			let data: Data = try encoder.encode(dataPacket)
 			return data
 		} catch {
-			GD.print("Failed to encode data. Error: \(error)")
+			GD.pushError("Failed to encode data. Error: \(error)")
 			return nil
 		}
 	}
 
 	func decode(dataPacket: Data) -> DataPacket? {
-		return try? PropertyListDecoder().decode(DataPacket.self, from: dataPacket)
+		do {
+			return try PropertyListDecoder().decode(DataPacket.self, from: dataPacket)
+		} catch {
+			GD.pushError("Failed to decode data. Error: \(error)")
+			return nil
+		}
 	}
 }
