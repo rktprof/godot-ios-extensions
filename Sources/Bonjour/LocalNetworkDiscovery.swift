@@ -36,7 +36,6 @@ class LocalNetworkDiscovery: RefCounted {
 	/// 	- typeDescriptor: A service descriptor used to discover a Bonjour service.
 	@Callable
 	func start(typeDescriptor: String) {
-		GD.print("Starting LocalNetworkDiscovery for \(typeDescriptor)...")
 		let descriptor: NWBrowser.Descriptor = NWBrowser.Descriptor.bonjourWithTXTRecord(
 			type: typeDescriptor,
 			domain: "local."
@@ -61,7 +60,6 @@ class LocalNetworkDiscovery: RefCounted {
 		browser?.browseResultsChangedHandler = nil
 		browser?.cancel()
 		browser = nil
-		GD.print("LocalNetworkDiscovery stopped")
 	}
 
 	/// Resolve a Bonjour endpoint into an ip address and port.
@@ -150,9 +148,6 @@ class LocalNetworkDiscovery: RefCounted {
 			switch change
 			{
 			case .added(let result):
-				GD.print(
-					"LocalNetworkDiscovery discovered server: \(result.endpoint.debugDescription), Meta: \(result.metadata) (\(result.hashValue))"
-				)
 				var server_port: Int = 0
 
 				switch result.metadata
@@ -174,9 +169,6 @@ class LocalNetworkDiscovery: RefCounted {
 				discoveredDevices[result.hashValue] = result
 
 			case .removed(let result):
-				GD.print(
-					"LocalNetworkDiscovery lost server \(result.endpoint.debugDescription), Meta: \(result.metadata) (\(result.hashValue))"
-				)
 				discoveredDevices.removeValue(forKey: result.hashValue)
 
 				switch result.endpoint
@@ -188,7 +180,6 @@ class LocalNetworkDiscovery: RefCounted {
 				}
 
 			case .changed(let old, let new, flags: _):
-				GD.print("LocalNetworkDiscovery server changed \(old.endpoint) -> \(new.endpoint)")
 				var server_port: Int = 0
 				switch new.metadata
 				{

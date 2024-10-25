@@ -42,18 +42,20 @@ class LocalNetworkListener: RefCounted {
 		listener?.stateUpdateHandler = nil
 		listener?.newConnectionHandler = nil
 		listener?.cancel()
-		GD.print("LocalNetworkListener stopped")
 	}
 
 	func stateChanged(to newState: NWListener.State) {
 		switch newState {
 		case .ready:
-			GD.print(
-				"LocalNetworkListener listening on \(self.listener.debugDescription), port \(self.listener?.port?.debugDescription)"
-			)
+			break
 		case .failed(let error):
-			GD.print("LocalNetworkListener failed, error: \(error)")
-		default:
+			GD.pushError("LocalNetworkListener failed, error: \(error)")
+			break
+		case .setup:
+			break
+		case .waiting(_):
+			break
+		case .cancelled:
 			break
 		}
 	}
