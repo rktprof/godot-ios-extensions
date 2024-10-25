@@ -84,7 +84,7 @@ class InAppPurchase: RefCounted {
 	///
 	/// - Parameters:
 	/// 	- productID: The identifier of the product that you enter in App Store Connect.
-	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int `InAppPurchaseStatus`)
+	/// 	- onComplete: Callback with parameter: (error: Variant, status: Variant) -> (error: Int `InAppPurchaseError`, status: Int `InAppPurchaseStatus`)
 	@Callable
 	func purchase(_ productID: String, onComplete: Callable) {
 		Task {
@@ -97,28 +97,39 @@ class InAppPurchase: RefCounted {
 						let transaction: Transaction = try checkVerified(verification)
 						await transaction.finish()
 
-						onComplete.callDeferred(Variant(InAppPurchaseStatus.purchaseOK.rawValue))
+						onComplete.callDeferred(
+							Variant(OK),
+							Variant(InAppPurchaseStatus.purchaseOK.rawValue)
+						)
 						break
 					case .pending:
 						// Transaction waiting on authentication or approval
 						onComplete.callDeferred(
+							Variant(OK),
 							Variant(InAppPurchaseStatus.purchasePendingAuthorization.rawValue)
 						)
 						break
 					case .userCancelled:
 						// User cancelled the purchase
 						onComplete.callDeferred(
+							Variant(OK),
 							Variant(InAppPurchaseStatus.purchaseCancelledByUser.rawValue)
 						)
 						break
 					}
 				} else {
 					GD.pushError("IAP Product doesn't exist: \(productID)")
-					onComplete.callDeferred(Variant(InAppPurchaseError.noSuchProduct.rawValue))
+					onComplete.callDeferred(
+						Variant(InAppPurchaseError.noSuchProduct.rawValue),
+						Variant()
+					)
 				}
 			} catch {
 				GD.pushError("IAP Failed to get products from App Store, error: \(error)")
-				onComplete.callDeferred(Variant(InAppPurchaseError.purchaseFailed.rawValue))
+				onComplete.callDeferred(
+					Variant(InAppPurchaseError.purchaseFailed.rawValue),
+					Variant()
+				)
 			}
 		}
 	}
