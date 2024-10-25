@@ -269,10 +269,18 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _close() {
+		// TODO: I suspect some things here happen too fast, but only sometimes
+		// The result is that sometimes the disconnect signal is sent immediately
+		// and sometimes it will time out after a time.
+
+		// Theory: A disconnect is sent and awaits a return, but if it takes more than a certain time
+		// the sender doesn't exist and all clients will wait for timeout
+
 		GD.print("[Matchmaking] Closing connection...")
 		stopMatchmaking()
 		match?.disconnect()
 		match = nil
+
 		incomingPackets.removeAll()
 		currentPacket = nil
 		clearPeers()
@@ -384,10 +392,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _getTransferChannel() -> Int32 {
-		return currentTransferChannel
-	}
-
-	func _get_transfer_channel() -> Int32 {
+		// A bug somewhere in the GDExtension implementations complains that this function isn't overridden
 		return currentTransferChannel
 	}
 
@@ -396,10 +401,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _getTransferMode() -> MultiplayerPeer.TransferMode {
-		return currentTransferMode
-	}
-
-	func _get_transfer_mode() -> MultiplayerPeer.TransferMode {
+		// A bug somewhere in the GDExtension implementations complains that this function isn't overridden
 		return currentTransferMode
 	}
 
@@ -494,7 +496,15 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	func removePlayer(_ player: GKPlayer) {
 		if let peerID: Int32 = getPeerID(for: player) {
 			removePeer(withID: player.gamePlayerID)
-			emit(signal: SignalWith1Argument("peer_disconnected", argument1Name: "id"), Int(peerID))
+
+			if peerID == HOST_ID && getLocalPlayerID() != peerID {
+				GD.print("[Matchmaking] Host disconnected")
+				connectionStatus = .disconnected
+				close()
+			} else {
+				GD.print("[Matchmaking] Player disconnected")
+				emit(signal: SignalWith1Argument("peer_disconnected", argument1Name: "id"), Int(peerID))
+			}
 		} else {
 			GD.pushError("[Matchmaking] Tried to remove player but player wasn't mapped")
 		}
@@ -635,12 +645,6 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				player.displayName
 			)
 		}
-
-		if match != nil {
-			GKMatchmaker.shared().finishMatchmaking(for: match!)
-		}
-
-		self.isMatching = false
 	}
 
 	// This class is just an intermediate because a @Godot class doesn't inherit from NSObject
