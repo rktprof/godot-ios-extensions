@@ -35,6 +35,12 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		case timeout = 5
 		case invalid = 6
 		case notFound = 7
+		/// Triggered when we receive data from an unkown peer, usually because peerData was dropped
+		case handshakeFailed = 8
+	}
+
+	enum MultiplayerPeerError: Int, Error {
+		case unknownPeer = 1
 	}
 
 	struct Packet {
@@ -63,6 +69,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	var hostOriginalID: Int32?
 	var match: GKMatch?
 	var isMatching: Bool = false
+	var shouldReinvite: Bool = false
 
 	required init() {
 		super.init()
@@ -572,7 +579,13 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	func match(_ match: GKMatch, shouldReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
-		return false
+		GD.print("[Matchmaking] Disconnected, should reinvite: \(shouldReinvite)")
+		if shouldReinvite {
+			shouldReinvite = false
+			return true
+		} else {
+			return false
+		}
 	}
 
 	func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
@@ -591,6 +604,17 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				if let fromPeer: Int32 = getPeerID(for: player) {
 					let packet: Packet = Packet(data: data, from: fromPeer, channel: 0)
 					incomingPackets.append(packet)
+				} else {
+					GD.pushError(
+						"[Matchmaking] ERROR: Got data from unknown peer, peerData might have gotten lost. Closing connection"
+					)
+					emit(
+						signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
+						InviteStatus.handshakeFailed.rawValue,
+						player.displayName
+					)
+					shouldReinvite = true
+					_close()
 				}
 			} else {
 				GD.pushWarning("[Matchmaking] Got unhandled data packet")
