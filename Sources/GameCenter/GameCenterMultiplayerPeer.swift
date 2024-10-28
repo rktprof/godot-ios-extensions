@@ -60,6 +60,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	var currentPacket: Packet?
 
 	var peerMap: [String: PeerData] = [:]  // Maps gamePlayerID to PeerData
+	var hostOriginalID: Int32?
 	var match: GKMatch?
 	var isMatching: Bool = false
 
@@ -296,16 +297,17 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _getPacketScript() -> PackedByteArray {
-		if incomingPackets.count == 0 {
+		guard incomingPackets.count > 0 else {
 			return PackedByteArray()
 		}
 
-		currentPacket = incomingPackets.removeFirst()
-		if let data: [UInt8] = currentPacket?.data {
-			return PackedByteArray(data)
+		var currentPacket = incomingPackets.removeFirst()
+
+		if currentPacket.from == hostOriginalID {
+			currentPacket.from = HOST_ID
 		}
 
-		return PackedByteArray()
+		return PackedByteArray(currentPacket.data)
 	}
 
 	override func _putPacketScript(pBuffer: PackedByteArray) -> GodotError {
@@ -365,6 +367,10 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 	override func _getPacketPeer() -> Int32 {
 		if let packet = incomingPackets.first {
+			if packet.from == hostOriginalID {
+				return HOST_ID
+			}
+
 			return packet.from
 		}
 
@@ -452,6 +458,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 	func setHost(_ host: GKPlayer) {
 		//GD.print("[Matchmaking] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
+		hostOriginalID = getPeerID(for: host)
 		setPeerID(for: host, id: HOST_ID)
 
 		if host == GKLocalPlayer.local {
@@ -472,7 +479,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			uniqueID = localPeerID
 
 			// Because connected_to_server never triggers on servers (uniqueID == HOST_ID),
-			// we need to let the host known that the conneciton is ready
+			// we need to let the host known that the connection is ready
 			if uniqueID == HOST_ID {
 				emit(signal: GameCenterMultiplayerPeer.serverCreated)
 			}
