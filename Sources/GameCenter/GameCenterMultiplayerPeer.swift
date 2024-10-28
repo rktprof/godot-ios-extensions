@@ -116,7 +116,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				request.recipients = players
 				request.recipientResponseHandler = invitationResponseHandler
 			} catch {
-				GD.pushError("[Matchmaking] Could not find player. Error: \(error)")
+				GD.pushError("[GameCenterPeer] Could not find player. Error: \(error)")
 				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.notFound.rawValue, "")
 				return
 			}
@@ -125,7 +125,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				match = try await GKMatchmaker.shared().findMatch(for: request)
 				match?.delegate = self.delegate
 			} catch {
-				GD.pushError("[Matchmaking] Failed to invite player. Error: \(error)")
+				GD.pushError("[GameCenterPeer] Failed to invite player. Error: \(error)")
 				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.timeout.rawValue, "")
 				return
 			}
@@ -165,7 +165,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 					GameCenter.instance?.removeInvite(withIndex: inviteIndex)
 				} catch {
-					GD.pushError("[Matchmaking] Unable to join game: \(error)")
+					GD.pushError("[GameCenterPeer] Unable to join game: \(error)")
 					emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.timeout.rawValue, "")
 
 					// NOTE: Removing the invite here will prevent retrying it, which might not be ideal
@@ -173,7 +173,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 					return
 				}
 			} else {
-				GD.pushError("[Matchmaking] Unable to join game: No invite at index \(inviteIndex)")
+				GD.pushError("[GameCenterPeer] Unable to join game: No invite at index \(inviteIndex)")
 				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.invalid.rawValue, "")
 				return
 			}
@@ -219,17 +219,23 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				// Handling user cancelled separately here because trying to emit a signal here causes a crash
 				return
 			} catch {
-				GD.pushError("[Matchmaking] Unable to find players: \(error)")
-				emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.timeout.rawValue)
+				GD.pushError("[GameCenterPeer] Unable to find players: \(error)")
+				emit(
+					signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
+					MatchmakingStatus.timeout.rawValue
+				)
 				return
 			}
 
+			isMatching = false
 			if match != nil {
 				GKMatchmaker.shared().finishMatchmaking(for: match!)
 			}
 
-			isMatching = false
-			emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.successful.rawValue)
+			emit(
+				signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
+				MatchmakingStatus.successful.rawValue
+			)
 		}
 	}
 
@@ -252,7 +258,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			// For some reason try await GKMatchmaker.shared().queryActivity() does not work, even though the docs say it should
 			GKMatchmaker.shared().queryActivity { players, error in
 				if error != nil {
-					GD.pushError("[Matchmaking] Failed to get matchmaking activity. Error \(error!)")
+					GD.pushError("[GameCenterPeer] Failed to get matchmaking activity. Error \(error!)")
 
 					onComplete.callDeferred(Variant(GameCenterError.unknownError.rawValue), Variant(0))
 					return
@@ -284,7 +290,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		// Theory: A disconnect is sent and awaits a return, but if it takes more than a certain time
 		// the sender doesn't exist and all clients will wait for timeout
 
-		GD.print("[Matchmaking] Closing connection...")
+		GD.print("[GameCenterPeer] Closing connection...")
 		stopMatchmaking()
 		match?.disconnect()
 		match = nil
@@ -300,7 +306,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _disconnectPeer(pPeer: Int32, pForce: Bool) {
-		GD.pushWarning("[Matchmaking] GKMatch is unable to disconnect players")
+		GD.pushWarning("[GameCenterPeer] GKMatch is unable to disconnect players")
 	}
 
 	override func _getPacketScript() -> PackedByteArray {
@@ -309,7 +315,6 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		}
 
 		var currentPacket = incomingPackets.removeFirst()
-
 		if currentPacket.from == hostOriginalID {
 			currentPacket.from = HOST_ID
 		}
@@ -355,11 +360,11 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				}
 
 			} catch {
-				GD.pushError("[Matchmaking] Failed to send data. Error \(error)")
+				GD.pushError("[GameCenterPeer] Failed to send data. Error \(error)")
 				return GodotError.errConnectionError
 			}
 		} else {
-			GD.pushError("[Matchmaking] Tried to send data before match was established.")
+			GD.pushError("[GameCenterPeer] Tried to send data before match was established.")
 			return GodotError.errConnectionError
 		}
 	}
@@ -464,7 +469,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	func setHost(_ host: GKPlayer) {
-		//GD.print("[Matchmaking] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
+		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
 		hostOriginalID = getPeerID(for: host)
 		setPeerID(for: host, id: HOST_ID)
 
@@ -478,6 +483,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	func finalizeMatch() {
+		GD.print("[GameCenterPeer] Finalizing match")
 		// When the host has been decided we can consider ourselves connected
 		// The reason we do this is that we need to pick a player to be HOST_ID before then
 		if let localPeerID = getPeerID(for: GKLocalPlayer.local) {
@@ -491,11 +497,14 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				emit(signal: GameCenterMultiplayerPeer.serverCreated)
 			}
 		} else {
-			GD.pushError("[Matchmaking] Failed to finalize match")
+			GD.pushError("[GameCenterPeer] Failed to finalize match")
 			connectionStatus = .disconnected
 			close()
 
-			emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.failed.rawValue)
+			emit(
+				signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
+				MatchmakingStatus.failed.rawValue
+			)
 		}
 
 		if let players = match?.players {
@@ -512,15 +521,15 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			removePeer(withID: player.gamePlayerID)
 
 			if peerID == HOST_ID && getLocalPlayerID() != peerID {
-				GD.print("[Matchmaking] Host disconnected")
+				GD.print("[GameCenterPeer] Host disconnected")
 				connectionStatus = .disconnected
 				close()
 			} else {
-				GD.print("[Matchmaking] Player disconnected")
+				GD.print("[GameCenterPeer] Player disconnected")
 				emit(signal: SignalWith1Argument("peer_disconnected", argument1Name: "id"), Int(peerID))
 			}
 		} else {
-			GD.pushError("[Matchmaking] Tried to remove player but player wasn't mapped")
+			GD.pushError("[GameCenterPeer] Tried to remove player but player wasn't mapped")
 		}
 	}
 
@@ -529,7 +538,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			let data = encode(peerData: peerData)
 			try match?.send(data!, to: players, dataMode: mode)
 		} catch {
-			GD.pushError("[Matchmaking] Failed to send peerData: \(error)")
+			GD.pushError("[GameCenterPeer] Failed to send peerData: \(error)")
 		}
 	}
 
@@ -557,29 +566,29 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 			if let localPeerData: PeerData = getPeerData(for: GKLocalPlayer.local) {
 				sendPeerData(localPeerData, to: [player], with: .reliable)
 			} else {
-				GD.pushError("[Matchmaking] Found no local peerData to send")
+				GD.pushError("[GameCenterPeer] Found no local peerData to send")
 			}
 
 		case .disconnected:
 			removePlayer(player)
 
 		default:
-			GD.pushWarning("[Matchmaking] \(player.displayName) Connection Unknown \(state)")
+			GD.pushWarning("[GameCenterPeer] \(player.displayName) Connection Unknown \(state)")
 		}
 	}
 
 	func match(_ match: GKMatch, didFailWithError error: Error?) {
 		if error != nil {
-			GD.pushError("[Matchmaking] Match failed with error: \(error)")
+			GD.pushError("[GameCenterPeer] Match failed with error: \(error)")
 		} else {
-			GD.pushError("[Matchmaking] Match failed with unknown error")
+			GD.pushError("[GameCenterPeer] Match failed with unknown error")
 		}
 
 		emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.failed.rawValue)
 	}
 
 	func match(_ match: GKMatch, shouldReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
-		GD.print("[Matchmaking] Disconnected, should reinvite: \(shouldReinvite)")
+		GD.print("[GameCenterPeer] Disconnected, should reinvite: \(shouldReinvite)")
 		if shouldReinvite {
 			shouldReinvite = false
 			return true
@@ -606,7 +615,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 					incomingPackets.append(packet)
 				} else {
 					GD.pushError(
-						"[Matchmaking] ERROR: Got data from unknown peer, peerData might have gotten lost. Closing connection"
+						"[GameCenterPeer] ERROR: Got data from unknown peer, peerData might have gotten lost. Closing connection"
 					)
 					emit(
 						signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
@@ -617,10 +626,10 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 					_close()
 				}
 			} else {
-				GD.pushWarning("[Matchmaking] Got unhandled data packet")
+				GD.pushWarning("[GameCenterPeer] Got unhandled data packet")
 			}
 		} catch {
-			GD.pushError("[Matchmaking] Error when reciving data \(error)")
+			GD.pushError("[GameCenterPeer] Error when reciving data \(error)")
 		}
 	}
 
