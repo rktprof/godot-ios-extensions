@@ -12,6 +12,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	#signal("matchmaking_status_updated", arguments: ["status": Int.self])
 	/// Called when `InviteStatus` is updated
 	#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
+	/// Called when host changes
+	#signal("host_changed", arguments: ["original_id": Int.self, "new_id": Int.self])
 
 	enum Mode: Int {
 		case none = 0
@@ -453,6 +455,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	func setHost(_ host: GKPlayer) {
 		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
 		hostOriginalID = getPeerID(for: host)
+
+		emit(signal: GameCenterMultiplayerPeer.hostChanged, Int(hostOriginalID ?? 0), Int(HOST_ID))
 		setPeerID(for: host, id: HOST_ID)
 
 		if host == GKLocalPlayer.local {
