@@ -24,6 +24,38 @@ extension GameCenterMultiplayerPeer {
 		return peerMap[gamePlayerID]
 	}
 
+	func getNameFor(for peerID: Int32) -> String {
+		if peerID == 0 {
+			return "All players"
+		}
+		if peerID < 0 {
+			var exclude: Int32 = -peerID
+			if let currentMatch = match {
+				for player in currentMatch.players {
+					if let exclude = getPeerData(for: player)?.id {
+						return "All players, excluding \(player.displayName)"
+					}
+				}
+			}
+
+			return "All players, excluding Unknown"
+		}
+
+		if peerID == uniqueID {
+			return GameKit.GKLocalPlayer.local.displayName
+		}
+
+		if let currentMatch = match {
+			for player in currentMatch.players {
+				if let peerID = getPeerData(for: player)?.id {
+					return player.displayName
+				}
+			}
+		}
+
+		return "Unknown"
+	}
+
 	func setPeerID(for player: GKPlayer, id: Int32) {
 		setPeerID(for: player.gamePlayerID, id: id)
 	}

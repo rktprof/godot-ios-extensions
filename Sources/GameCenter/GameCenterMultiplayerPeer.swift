@@ -7,6 +7,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	let RESERVED_CHANNELS: Int32 = 2
 
 	/// Called when a match is finalized
+	///
+	/// > NOTE: This has no parameters to be compatible with the built-in `connected_to_server` signal
 	#signal("server_created")
 	/// Called when the `MatchmakingStatus` changes
 	#signal("matchmaking_status_updated", arguments: ["status": Int.self])
@@ -244,6 +246,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 				// Handling user cancelled separately here because trying to emit a signal here causes a crash
 				return
 			} catch {
+				// TODO: Handle all types of errors here, like Code 13: Matchmaking already in progress
 				GD.pushError("[GameCenterPeer] Unable to find players: \(error)")
 				emit(
 					signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
@@ -269,6 +272,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	func stopMatchmaking() {
 		isMatching = false
 		GKMatchmaker.shared().cancel()
+		GD.print("[GameCenterPeer] Stopped matchmaking")
 	}
 
 	/// Get current player activity
@@ -333,6 +337,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		if let currentMatch = match {
 			do {
 				let data = encode(packedByteArray: pBuffer)
+				//GD.print("-> SENDING\t gameData(\(data!.count ?? -1) bytes) to \(getNameFor(for: targetPeer)) (id: \(targetPeer)), \(getTransferMode())")
 				if activeMode == .server {
 					if targetPeer == 0 {
 						// Send to all players
@@ -476,7 +481,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	func setHost(_ host: GKPlayer) {
-		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (ID: \(getPeerID(for: host)) -> \(HOST_ID))")
+		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (id: \(getPeerID(for: host)) -> \(HOST_ID))")
 		hostOriginalID = getPeerID(for: host)
 
 		emit(signal: GameCenterMultiplayerPeer.hostChanged, Int(hostOriginalID ?? 0), Int(HOST_ID))
@@ -492,7 +497,6 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	func finalizeMatch() {
-		GD.print("[GameCenterPeer] Finalizing match")
 		// When the host has been decided we can consider ourselves connected
 		// The reason we do this is that we need to pick a player to be HOST_ID before then
 		if let localPeerID = getPeerID(for: GKLocalPlayer.local) {
@@ -543,6 +547,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 	func sendPeerData(_ peerData: PeerData, to players: [GKPlayer], with mode: GKMatch.SendDataMode) {
 		do {
+			//GD.print("-> SENDING\t peerData(id: \(peerData.id!), \(mode))")
 			let data = encode(peerData: peerData)
 			try match?.send(data!, to: players, dataMode: mode)
 		} catch {
@@ -634,14 +639,15 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 			if let peerData: PeerData = gameData?.peerData {
 				// Player sent peerData
+				//GD.print("<- RECEIVED\t peerData from \(player.displayName), id: \(peerData.id!)")
 				setPeerData(for: player, data: peerData)
 
 				if match.expectedPlayerCount == 0 {
 					decideHost()
 				}
-
 			} else if let data: [UInt8] = gameData?.bytes {
 				if let fromPeer: Int32 = getPeerID(for: player) {
+					//GD.print("<- RECEIVED\t gameData(\(data.count) bytes) from \(player.displayName) (id: \(fromPeer))")
 					let packet: Packet = Packet(data: data, from: fromPeer, channel: 0)
 					incomingPackets.append(packet)
 				} else {
