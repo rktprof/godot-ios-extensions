@@ -283,26 +283,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 	}
 
 	override func _close() {
-		// TODO: I suspect some things here happen too fast, but only sometimes
-		// The result is that sometimes the disconnect signal is sent immediately
-		// and sometimes it will time out after a time.
-
-		// Theory: A disconnect is sent and awaits a return, but if it takes more than a certain time
-		// the sender doesn't exist and all clients will wait for timeout
-
-		GD.print("[GameCenterPeer] Closing connection...")
 		stopMatchmaking()
-		match?.disconnect()
-		match = nil
-
-		incomingPackets.removeAll()
-		currentPacket = nil
-		clearPeers()
-
-		connectionStatus = .disconnected
-		activeMode = .none
-		uniqueID = 0
-		refuseConnections = false
+		disconnect()
 	}
 
 	override func _disconnectPeer(pPeer: Int32, pForce: Bool) {
@@ -522,8 +504,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 
 			if peerID == HOST_ID && getLocalPlayerID() != peerID {
 				GD.print("[GameCenterPeer] Host disconnected")
-				connectionStatus = .disconnected
-				close()
+				disconnect()
 			} else {
 				GD.print("[GameCenterPeer] Player disconnected")
 				emit(signal: SignalWith1Argument("peer_disconnected", argument1Name: "id"), Int(peerID))
@@ -540,6 +521,29 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		} catch {
 			GD.pushError("[GameCenterPeer] Failed to send peerData: \(error)")
 		}
+	}
+
+	func disconnect() {
+		// TODO: I suspect some things here happen too fast, but only sometimes
+		// The result is that sometimes the disconnect signal is sent immediately
+		// and sometimes it will time out after a time.
+
+		// Theory: A disconnect is sent and awaits a return, but if it takes more than a certain time
+		// the sender doesn't exist and all clients will wait for timeout
+		// Solution: Maybe wait a second after match?.disconnect()
+
+		connectionStatus = .disconnected
+		activeMode = .none
+		uniqueID = 0
+
+		match?.disconnect()
+		match = nil
+
+		incomingPackets.removeAll()
+		currentPacket = nil
+		clearPeers()
+
+		refuseConnections = false
 	}
 
 	func getTransferMode() -> GKMatch.SendDataMode {
@@ -623,7 +627,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 						player.displayName
 					)
 					shouldReinvite = true
-					_close()
+					disconnect()
 				}
 			} else {
 				GD.pushWarning("[GameCenterPeer] Got unhandled data packet")
