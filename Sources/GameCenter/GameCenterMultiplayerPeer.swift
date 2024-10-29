@@ -134,6 +134,29 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension, GameCenterMatchmaking
 		}
 	}
 
+	/// Cancel a pending invite to a specific player
+	@Callable
+	func cancelInvite(to playerID: String) {
+		Task {
+			do {
+				let players: [GKPlayer] = try await GKLocalPlayer.local.loadFriends(identifiedBy: [playerID])
+				for player in players {
+					GKMatchmaker.shared().cancelPendingInvite(to: player)
+				}
+			} catch {
+				GD.pushError("[GameCenterPeer] Could not find player. Error: \(error)")
+				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.notFound.rawValue, "")
+				return
+			}
+		}
+	}
+
+	/// Cancel all pending invites
+	@Callable
+	func cancelInvites() {
+		GKMatchmaker.shared().cancel()
+	}
+
 	/// Join a game recieved through an invite
 	///
 	/// > NOTE: You need to listen to the ``invite_received`` signal in the GameCenter class
