@@ -7,6 +7,7 @@ extension GameCenter {
 		case friendAccessRestricted = 1
 		case failedToLoadFriends = 2
 		case failedToLoadRecentPlayers = 3
+		case noSuchFriend = 4
 	}
 
 	/// Load the friends of the authenticated player.
@@ -71,9 +72,13 @@ extension GameCenter {
 					try await updateFriends()
 				}
 
-				let friend = self.friends!.first(where: { $0.gamePlayerID == gamePlayerID })!
-				let image = try await friend.loadImage(size: .small)
-				onComplete.callDeferred(Variant(OK), Variant(image))
+				if let friend = self.friends?.first(where: { $0.gamePlayerID == gamePlayerID }) {
+					let image = try await friend.loadImage(size: .small)
+					onComplete.callDeferred(Variant(OK), Variant(image))
+				} else {
+					GD.pushError("Found no friend with id: \(gamePlayerID)")
+					onComplete.callDeferred(Variant(FriendsError.noSuchFriend.rawValue), Variant())
+				}
 			} catch {
 				GD.pushError("Failed to load friend picture. \(error)")
 				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
