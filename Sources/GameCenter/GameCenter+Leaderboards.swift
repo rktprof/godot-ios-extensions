@@ -15,12 +15,12 @@ extension GameCenter {
 	/// 	- leaderboardIDs: An array of leaderboard identifiers that you enter in App Store Connect.
 	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int)
 	@inline(__always)
-	func submitScore(_ score: Int, leaderboardIDs: [String], onComplete: Callable) {
+	func submitScore(_ score: Int, leaderboardIDs: [String], context: Int, onComplete: Callable) {
 		Task {
 			do {
 				try await GKLeaderboard.submitScore(
 					score,
-					context: 0,
+					context: context,
 					player: GKLocalPlayer.local,
 					leaderboardIDs: leaderboardIDs
 				)
