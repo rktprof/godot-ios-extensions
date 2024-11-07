@@ -14,6 +14,9 @@ import UIKit
 		GameCenterPlayerLocal.self,
 		GameCenterLeaderboardEntry.self,
 		GameCenterAchievement.self,
+		GameCenterChallenge.self,
+		GameCenterScoreChallenge.self,
+		GameCenterAchievementChallenge.self,
 	]
 )
 
@@ -28,6 +31,27 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		case failedToAuthenticate = 4
 		case failedToLoadPicture = 8
 	}
+
+	/// Signal called when you completed a challenge
+	#signal(
+		"challenge_completed",
+		arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self]
+	)
+	/// Signal called when a challenge was accepted
+	#signal(
+		"issued_challenge_accepted",
+		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
+	)
+	/// Signal called when a challenge was completed
+	#signal(
+		"issued_challenge_completed",
+		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
+	)
+	/// Signal called when a challenge was received but not yet accepted
+	#signal(
+		"issued_challenge_received",
+		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
+	)
 	/// Signal called when an invite is accepted
 	#signal("invite_accepted", arguments: ["from": String.self, "index": Int.self])
 	/// Signal called when an invite is removed
@@ -43,6 +67,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	var player: GameCenterPlayer?
 
 	var inviteDelegate: InviteDelegate?
+	var challengeDelegate: ChallengeDelegate?
 
 	internal(set) var friends: [GKPlayer]?
 	internal(set) var invites: [GKInvite]?
@@ -53,12 +78,14 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		super.init()
 		GameCenter.instance = self
 		inviteDelegate = InviteDelegate(withDelegate: self)
+		challengeDelegate = ChallengeDelegate(withDelegate: self)
 	}
 
 	required init(nativeHandle: UnsafeRawPointer) {
 		super.init(nativeHandle: nativeHandle)
 		GameCenter.instance = self
 		inviteDelegate = InviteDelegate(withDelegate: self)
+		challengeDelegate = ChallengeDelegate(withDelegate: self)
 	}
 
 	// MARK: Authentication
@@ -296,6 +323,38 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	@Callable
 	func show_achievement_overlay(achievementdID: String, onClose: Callable) {
 		showAchievementOverlay(achievementdID: achievementdID, onClose: onClose)
+	}
+
+	// Challenges
+
+	@Callable
+	func load_received_challenges(onComplete: Callable) {
+		loadReceivedChallenges(onComplete: onComplete)
+	}
+
+	@Callable
+	func load_challengable_players(onComplete: Callable) {
+		loadChallengablePlayers(onComplete: onComplete)
+	}
+
+	@Callable
+	func issue_score_challenge(leaderboardID: String, receiverID: String, message: String, onComplete: Callable) {
+		issueScoreChallenge(
+			leaderboardID: leaderboardID,
+			receiverID: receiverID,
+			message: message,
+			onComplete: onComplete
+		)
+	}
+
+	@Callable
+	func decline_challenge(challengeID: Int, onComplete: Callable) {
+		declineChallenge(challengeID: challengeID, onComplete: onComplete)
+	}
+
+	@Callable
+	func show_challenges_overlay(onClose: Callable) {
+		showChallengesOverlay(onClose: onClose)
 	}
 
 	// Friends

@@ -12,6 +12,9 @@ class GameCenterPlayer: RefCounted {
 
 	@Export var isInvitable: Bool = false
 
+	/// Deprecated, use gamePlayerID instead. This is however needed for backwards compatibility
+	@Export var playerID: String = ""
+
 	convenience init(_ player: GKPlayer) {
 		self.init()
 
@@ -20,5 +23,7 @@ class GameCenterPlayer: RefCounted {
 		gamePlayerID = player.gamePlayerID
 		teamPlayerID = player.teamPlayerID
 		isInvitable = player.isInvitable
+
+		playerID = player.playerID
 	}
 }
