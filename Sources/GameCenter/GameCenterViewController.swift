@@ -1,4 +1,4 @@
-#if os(iOS)
+#if canImport(UIKit)
 import SwiftGodot
 import GameKit
 import UIKit
@@ -36,3 +36,5 @@ class GameCenterViewController: UIViewController, GKGameCenterControllerDelegate
 	}
 }
 #endif
+
+// TODO: Implement NSViewController variant for macOS

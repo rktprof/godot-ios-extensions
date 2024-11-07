@@ -9,30 +9,25 @@ import UIKit
 	cdecl: "swift_entry_point",
 	types: [
 		GameCenter.self,
+		GameCenterMultiplayerPeer.self,
 		GameCenterPlayer.self,
 		GameCenterPlayerLocal.self,
-		GameCenterLeaderboards.self,
 		GameCenterLeaderboardEntry.self,
-		GameCenterAchievements.self,
 		GameCenterAchievement.self,
-		GameCenterMultiplayerPeer.self,
 	]
 )
 
 let OK: Int = 0
-enum GameCenterError: Int, Error {
-	case unknownError = 1
-	case notAuthenticated = 2
-	case notAvailable = 3
-	case failedToAuthenticate = 4
-	case failedToLoadFriends = 6
-	case friendAccessRestricted = 7
-	case failedToLoadPicture = 8
-	case failedToLoadInvites = 9
-}
 
 @Godot
 class GameCenter: RefCounted, GKInviteEventListener {
+	enum GameCenterError: Int, Error {
+		case unknownError = 1
+		case notAuthenticated = 2
+		case notAvailable = 3
+		case failedToAuthenticate = 4
+		case failedToLoadPicture = 8
+	}
 	/// Signal called when an invite is accepted
 	#signal("invite_accepted", arguments: ["from": String.self, "index": Int.self])
 	/// Signal called when an invite is removed
@@ -40,16 +35,19 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	/// Signal called when an invite is send
 	#signal("invite_sent", arguments: ["to": GArray.self])
 
-	#if os(iOS)
+	#if canImport(UIKit)
 	var viewController: GameCenterViewController = GameCenterViewController()
 	#endif
 
 	static var instance: GameCenter?
-	var inviteDelegate: InviteDelegate?
-	var invites: [GKInvite] = []
-
 	var player: GameCenterPlayer?
-	var friends: [GKPlayer]?
+
+	var inviteDelegate: InviteDelegate?
+
+	internal(set) var friends: [GKPlayer]?
+	internal(set) var invites: [GKInvite]?
+	internal(set) var achievements: [GKAchievement]?
+	internal(set) var achievementDescriptions: [GKAchievementDescription]?
 
 	required init() {
 		super.init()
@@ -143,7 +141,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		#endif
 	}
 
-	@Callable
+	/// A Boolean value that indicates whether a local player has signed in to Game Center.
 	func isAuthenticated() -> Bool {
 		#if os(iOS)
 		return GKLocalPlayer.local.isAuthenticated
@@ -152,10 +150,13 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		#endif
 	}
 
-	@Callable
+	/// Get the local player
+	///
+	/// - Parameters:
+	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
 	func getLocalPlayer(onComplete: Callable) {
 		guard GKLocalPlayer.local.isAuthenticated && self.player != nil else {
-			onComplete.call(Variant(GameCenterError.notAuthenticated.rawValue))
+			onComplete.call(Variant(GameCenterError.notAuthenticated.rawValue), Variant())
 			return
 		}
 
@@ -166,7 +167,6 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	///
 	/// - Parameters:
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: Image)
-	@Callable
 	func loadProfilePicture(onComplete: Callable) {
 		Task {
 			do {
@@ -179,214 +179,25 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		}
 	}
 
-	// MARK: Friends
-
-	/// Load the friends of the authenticated player.
-	///
-	/// - Parameters:
-	/// 	- onComplete: Callback with parameters: (error: Variant, friends: Variant) -> (error: Int, friends: [``GameCenterPlayer``])
-	@Callable
-	func loadFriends(onComplete: Callable) {
-		Task {
-			do {
-				var players = GArray()
-				let friends = try await GKLocalPlayer.local.loadFriends()
-
-				for friend in friends {
-					players.append(Variant(GameCenterPlayer(friend)))
-				}
-
-				self.friends = friends
-				onComplete.callDeferred(Variant(OK), Variant(players))
-
-			} catch {
-				GD.pushError("Error loading friends. \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadFriends.rawValue), Variant())
-			}
-		}
-	}
-
-	/// Load the profile picture of the given gamePlayerID.
-	/// > NOTE: Only works on friends
-	///
-	/// - Parameters
-	/// 	- onComplete: Callback with parameters: (error: Variant, data: Variant) -> (error: Int, data: Image)
-	@Callable
-	func loadFriendPicture(gamePlayerID: String, onComplete: Callable) {
-		if friends == nil {
-			loadFriends(onComplete: Callable())
-		}
-
-		Task {
-			do {
-				let friend = self.friends!.first(where: { $0.gamePlayerID == gamePlayerID })!
-				let image = try await friend.loadImage(size: .small)
-				onComplete.callDeferred(Variant(OK), Variant(image))
-			} catch {
-				GD.pushError("Failed to load friend picture. \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
-			}
-		}
-	}
-
-	/// Check for permission to load friends.
-	///
-	/// Usage:
-	/// ```python
-	///	game_center.canAccessFriends(func(error: Variant, data: Variant) -> void:
-	///		if error == OK:
-	///			var friendPhoto:Image = data as Image
-	///	)
-	///	```
-	///
-	/// - Parameters:
-	/// 	- onComplete: Callback with parameters: (error: Variant, status: Variant) -> (error: Int, status: Int)
-	/// 	Possible status types:
-	/// 		- notDetermined = 0
-	/// 		- restricted = 1
-	/// 		- denied = 2
-	/// 		- authorized = 3
-	@Callable
-	func canAccessFriends(onComplete: Callable) {
-		Task {
-			do {
-				let status = try await GKLocalPlayer.local.loadFriendsAuthorizationStatus()
-				onComplete.callDeferred(Variant(OK), Variant(status.rawValue))
-			} catch {
-				GD.pushError("Error accessing friends: \(error).")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadFriends.rawValue), Variant())
-			}
-		}
-	}
-
-	// MARK: Invites
-
-	/// Get the invite with index.
-	///
-	/// NOTE: There is no official functionality to load invites, so a list is kept which might hold expired invites
-	///
-	/// - Parameters:
-	/// 	- index: The index in the internal list of invites
-	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: GameCenterInvite)
-	@Callable
-	func getInvite(withIndex index: Int, onComplete: Callable) {
-		guard index >= 0 || index < invites.count else {
-			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), Variant())
-			return
-		}
-
-		onComplete.callDeferred(Variant(OK), Variant(GameCenterInvite(invites[index])))
-	}
-
-	/// Get all the currently active invites.
-	///
-	/// NOTE: There is no official functionality to load invites, so a list is kept which might hold expired invites
-	///
-	/// - Parameters:
-	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: [GameCenterInvite])
-	@Callable
-	func getInvites(onComplete: Callable) {
-		Task {
-			do {
-				var result = GArray()
-				let friends = try await GKLocalPlayer.local.loadFriends()
-
-				for invite in invites {
-					result.append(Variant(GameCenterInvite(invite)))
-				}
-
-				onComplete.callDeferred(Variant(OK), Variant(result))
-
-			} catch {
-				GD.pushError("Error loading invites. \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadInvites.rawValue), Variant())
-			}
-		}
-	}
-
-	/// Remove invite with index
-	///
-	/// - Parameters:
-	/// 	- index: The index in the internal list of invites
-	@Callable
-	func removeInvite(withIndex index: Int) -> Bool {
-		guard index >= 0 || index < invites.count else {
-			return false
-		}
-
-		invites.remove(at: index)
-		emit(signal: GameCenter.inviteRemoved, index)
-
-		return true
-	}
-
-	// Internal
-
-	func getInvite(withIndex index: Int) -> GKInvite? {
-		guard index >= 0 || index < invites.count else {
-			return nil
-		}
-
-		return invites[index]
-	}
-
-	// Invite protocol implementation
-
-	func player(_ player: GKPlayer, didAccept invite: GKInvite) {
-		GD.print("[GameCenter] Invite accepted: \(invite)")
-
-		invites.append(invite)
-		emit(signal: GameCenter.inviteAccepted, invite.sender.displayName, Int(invites.count - 1))
-	}
-
-	func player(_ player: GKPlayer, didRequestMatchWithRecipients recipientPlayers: [GKPlayer]) {
-		GD.print("[GameCenter] Invite sent to \(recipientPlayers)")
-		var players: GArray = GArray()
-		for recipient in recipientPlayers {
-			players.append(Variant(GameCenterPlayer(recipient)))
-		}
-
-		emit(signal: GameCenter.inviteSent, players)
-	}
-
-	class InviteDelegate: NSObject, GKLocalPlayerListener {
-		var delegate: GKInviteEventListener
-
-		required init(withDelegate delegate: GKInviteEventListener) {
-			self.delegate = delegate
-			super.init()
-		}
-
-		func player(_ player: GKPlayer, didAccept invite: GKInvite) {
-			delegate.player?(player, didAccept: invite)
-		}
-
-		func player(_ player: GKPlayer, didRequestMatchWithRecipients recipientPlayers: [GKPlayer]) {
-			delegate.player?(player, didRequestMatchWithRecipients: recipientPlayers)
-		}
-	}
-
 	// MARK: UI Overlays
 
 	/// Show GameCenter dashboard overlay.
 	///
 	/// - Parameters:
 	/// 	- onClose: Called when the user closes the overlay.
-	@Callable
 	func showOverlay(onClose: Callable) {
 		#if canImport(UIKit)
 		viewController.showUIController(GKGameCenterViewController(state: .dashboard), onClose: onClose)
 		#endif
 	}
 
-	/// Show GameCenter friends overlay.
+	/// Show GameCenter player profile overlay.
 	///
 	/// - Parameters:
 	/// 	- onClose: Called when the user closes the overlay.
-	@Callable
-	func showFriendsOverlay(onClose: Callable) {
+	func showProfileOverlay(onClose: Callable) {
 		#if canImport(UIKit)
-		viewController.showUIController(GKGameCenterViewController(state: .localPlayerFriendsList), onClose: onClose)
+		viewController.showUIController(GKGameCenterViewController(state: .localPlayerProfile), onClose: onClose)
 		#endif
 	}
 
@@ -394,7 +205,6 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	///
 	/// - Parameters:
 	/// 	- showHighlights: A Boolean value that indicates whether to display highlights for achievements and current ranks for leaderboards.
-	@Callable
 	func showAccessPoint(showHighlights: Bool) {
 		GKAccessPoint.shared.location = .topTrailing
 		GKAccessPoint.shared.showHighlights = showHighlights
@@ -402,8 +212,180 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	/// Hide GameCenter access point.
-	@Callable
 	func hideAccessPoint() {
 		GKAccessPoint.shared.isActive = false
+	}
+
+	// MARK: Godot callables
+	// Because @Callable doesn't work in extensions
+
+	// General
+
+	@Callable
+	func is_authenticated() -> Bool {
+		return isAuthenticated()
+	}
+
+	@Callable
+	func get_local_player(onComplete: Callable) {
+		getLocalPlayer(onComplete: onComplete)
+	}
+
+	@Callable
+	func load_profile_picture(onComplete: Callable) {
+		loadProfilePicture(onComplete: onComplete)
+	}
+
+	@Callable
+	func show_profile_overlay(onClose: Callable) {
+		showProfileOverlay(onClose: onClose)
+	}
+
+	@Callable
+	func show_access_point(showHighlights: Bool) {
+		showAccessPoint(showHighlights: showHighlights)
+	}
+
+	@Callable
+	func hide_access_point() {
+		hideAccessPoint()
+	}
+
+	// Achievements
+
+	@Callable
+	func set_achievement_progress(achievementID: String, percentComplete: Float, onComplete: Callable) {
+		setAchievementProgress(achievementID: achievementID, percentComplete: percentComplete, onComplete: onComplete)
+	}
+
+	@Callable
+	func report_achievement_progress(onComplete: Callable) {
+		reportAchievementProgress(onComplete: onComplete)
+	}
+
+	@Callable
+	func get_achievement(achievementID: String, onComplete: Callable) {
+		getAchievement(achievementID: achievementID, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_achievement_description(achievementID: String, onComplete: Callable) {
+		getAchievementDescription(achievementID: achievementID, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_achievements(onComplete: Callable) {
+		getAchievements(onComplete: onComplete)
+	}
+
+	@Callable
+	func get_achievement_descriptions(onComplete: Callable) {
+		getAchievementDescriptions(onComplete: onComplete)
+	}
+
+	@Callable
+	func reset_achievements(onComplete: Callable) {
+		resetAchievements(onComplete: onComplete)
+	}
+
+	@Callable
+	func show_achievements_overlay(onClose: Callable) {
+		showAchievementsOverlay(onClose: onClose)
+	}
+
+	@Callable
+	func show_achievement_overlay(achievementdID: String, onClose: Callable) {
+		showAchievementOverlay(achievementdID: achievementdID, onClose: onClose)
+	}
+
+	// Friends
+
+	@Callable
+	func load_friends(onComplete: Callable) {
+		loadFriends(onComplete: onComplete)
+	}
+
+	@Callable
+	func load_Recent_players(onComplete: Callable) {
+		loadRecentPlayers(onComplete: onComplete)
+	}
+
+	@Callable
+	func load_friend_picture(gamePlayerID: String, onComplete: Callable) {
+		loadFriendPicture(gamePlayerID: gamePlayerID, onComplete: onComplete)
+	}
+
+	@Callable
+	func can_access_friends(onComplete: Callable) {
+		canAccessFriends(onComplete: onComplete)
+	}
+
+	@Callable
+	func show_friends_overlay(onClose: Callable) {
+		showFriendsOverlay(onClose: onClose)
+	}
+
+	@Callable
+	func show_friend_request_creator() {
+		showFriendRequestCreator()
+	}
+
+	// Leaderboards
+
+	@Callable
+	func submit_score(score: Int, leaderboardIDs: [String], onComplete: Callable) {
+		submitScore(score, leaderboardIDs: leaderboardIDs, context: 0, onComplete: onComplete)
+	}
+
+	@Callable
+	func submit_score_with_context(score: Int, leaderboardIDs: [String], context: Int, onComplete: Callable) {
+		submitScore(score, leaderboardIDs: leaderboardIDs, context: context, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_global_scores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
+		getGlobalScores(leaderboardID: leaderboardID, start: start, length: length, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_friends_scores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
+		getFriendsScores(leaderboardID: leaderboardID, start: start, length: length, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_previous_occurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
+		getPreviousOccurance(leaderboardID: leaderboardID, start: start, length: length, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_previous_friends_occurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
+		getPreviousFriendsOccurance(leaderboardID: leaderboardID, start: start, length: length, onComplete: onComplete)
+	}
+
+	@Callable
+	func show_leaderboards_overlay(onClose: Callable) {
+		showLeaderboardsOverlay(onClose: onClose)
+	}
+
+	@Callable
+	func show_leaderboard_overlay(leaderboardID: String, onClose: Callable) {
+		showLeaderboardOverlay(leaderboardID: leaderboardID, onClose: onClose)
+	}
+
+	// Invites
+
+	@Callable
+	func get_invite(withIndex index: Int, onComplete: Callable) {
+		getInvite(withIndex: index, onComplete: onComplete)
+	}
+
+	@Callable
+	func get_invites(onComplete: Callable) {
+		getInvites(onComplete: onComplete)
+	}
+
+	@Callable
+	func remove_invite(withIndex index: Int) -> Bool {
+		removeInvite(withIndex: index)
 	}
 }

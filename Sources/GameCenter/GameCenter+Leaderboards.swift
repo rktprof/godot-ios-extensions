@@ -1,22 +1,12 @@
 import GameKit
 import SwiftGodot
 
-#if os(iOS)
-import UIKit
-#endif
+extension GameCenter {
 
-@Godot
-class GameCenterLeaderboards: RefCounted {
 	enum LeaderboardError: Int, Error {
 		case failedToLoadEntries = 1
 		case failedToSubmitScore = 2
 	}
-
-	#if os(iOS)
-	var viewController: GameCenterViewController = GameCenterViewController()
-	#endif
-
-	// MARK: Godot functions
 
 	/// Submit leadboard score.
 	///
@@ -24,8 +14,8 @@ class GameCenterLeaderboards: RefCounted {
 	/// 	- score: The score to submit-
 	/// 	- leaderboardIDs: An array of leaderboard identifiers that you enter in App Store Connect.
 	/// 	- onComplete: Callback with parameter: (error: Variant) -> (error: Int)
-	@Callable
-	func submitScore(score: Int, leaderboardIDs: [String], onComplete: Callable) {
+	@inline(__always)
+	func submitScore(_ score: Int, leaderboardIDs: [String], onComplete: Callable) {
 		Task {
 			do {
 				try await GKLeaderboard.submitScore(
@@ -49,7 +39,6 @@ class GameCenterLeaderboards: RefCounted {
 	///		- start: The start of the range to load
 	/// 	- length: How many entires to load (max: 100)
 	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
-	@Callable
 	func getGlobalScores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
 		let rangeLength: Int = min(length, 100)
@@ -69,7 +58,6 @@ class GameCenterLeaderboards: RefCounted {
 	///		- start: The start of the range to load
 	/// 	- length: How many entires to load (max: 100)
 	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
-	@Callable
 	func getFriendsScores(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
 		let rangeLength: Int = min(length, 100)
@@ -89,7 +77,6 @@ class GameCenterLeaderboards: RefCounted {
 	///		- start: The start of the range to load
 	/// 	- length: How many entires to load (max: 100)
 	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
-	@Callable
 	func getPreviousOccurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
 		let rangeLength: Int = min(length, 100)
@@ -109,7 +96,6 @@ class GameCenterLeaderboards: RefCounted {
 	///		- start: The start of the range to load
 	/// 	- length: How many entires to load (max: 100)
 	/// 	- onComplete: Callback with parameters: (error: Variant, localPlayer: Variant, players: Variant, count: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry, players: [``GameCenterLeaderboardEntry``], count: Int)
-	@Callable
 	func getPreviousFriendsOccurance(leaderboardID: String, start: Int, length: Int, onComplete: Callable) {
 		let rangeStart: Int = max(start, 1)
 		let rangeLength: Int = min(length, 100)
@@ -122,13 +108,14 @@ class GameCenterLeaderboards: RefCounted {
 		)
 	}
 
+	// MARK: UI Overlay
+
 	/// Show GameCenter leaderboards overlay.
 	///
 	/// - Parameters:
 	/// 	- onClose: Called when the user closes the overlay.
-	@Callable
-	func showLeaderboards(onClose: Callable) {
-		#if os(iOS)
+	func showLeaderboardsOverlay(onClose: Callable) {
+		#if canImport(UIKit)
 		viewController.showUIController(GKGameCenterViewController(state: .leaderboards), onClose: onClose)
 		#endif
 	}
@@ -138,9 +125,8 @@ class GameCenterLeaderboards: RefCounted {
 	/// - Parameters:
 	/// 	- leaderboardID: The identifier for the leaderboard that you enter in App Store Connect.
 	/// 	- onClose: Called when the user closes the overlay.
-	@Callable
-	func showLeaderboard(leaderboardID: String, onClose: Callable) {
-		#if os(iOS)
+	func showLeaderboardOverlay(leaderboardID: String, onClose: Callable) {
+		#if canImport(UIKit)
 		viewController.showUIController(
 			GKGameCenterViewController(
 				leaderboardID: leaderboardID,
@@ -174,13 +160,13 @@ class GameCenterLeaderboards: RefCounted {
 					// Add the local player
 					var localPlayer: Variant = Variant()
 					if let local: GKLeaderboard.Entry {
-						localPlayer = Variant(GameCenterLeaderboardEntry(local))
+						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
 
 					// Get all the players in range
 					var players: GArray = GArray()
 					for entry: GKLeaderboard.Entry in entries {
-						players.append(Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
 
 					onComplete.callDeferred(Variant(OK), localPlayer, Variant(players), Variant(count))
@@ -224,13 +210,13 @@ class GameCenterLeaderboards: RefCounted {
 					// Add the local player
 					var localPlayer: Variant = Variant()
 					if let local: GKLeaderboard.Entry {
-						localPlayer = Variant(GameCenterLeaderboardEntry(local))
+						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
 
 					// Get all the players in range
 					var players: GArray = GArray()
 					for entry: GKLeaderboard.Entry in entries {
-						players.append(Variant(GameCenterLeaderboardEntry(entry)))
+						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
 
 					onComplete.callDeferred(Variant(OK), localPlayer, Variant(players), Variant(count))
