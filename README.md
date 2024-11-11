@@ -85,6 +85,7 @@ onComplete.callDeferred(Variant(LeaderboardError.failedToLoadEntries.rawValue), 
   - Open overlay
   - Get achievement data
 - Matchmaking
+- Challenges
 
 **Bonjour**
 - LAN discovery
@@ -104,7 +105,6 @@ onComplete.callDeferred(Variant(LeaderboardError.failedToLoadEntries.rawValue), 
 Basic plugin documentation (for now, feel free to create an issue with a question)
 
 **GameCenter**
-- Challenges
 - macOS Support (should mostly work but opening overlays doesn't)
 
 **Bonjour**
