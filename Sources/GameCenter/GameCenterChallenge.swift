@@ -32,8 +32,6 @@ class GameCenterChallenge: RefCounted {
 		self.init()
 
 		self.challengeID = challenge.getChallengeID()
-		GD.print("[GameCenter] Found challenge with ID: \(self.challengeID)")
-
 		if let issuingPlayer = challenge.issuingPlayer {
 			self.issuingPlayer = GameCenterPlayer(issuingPlayer)
 		}

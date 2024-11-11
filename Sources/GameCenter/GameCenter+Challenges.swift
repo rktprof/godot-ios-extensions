@@ -20,7 +20,12 @@ extension GameCenter {
 				let challenges = try await GKChallenge.loadReceivedChallenges()
 
 				for challenge in challenges {
-					result.append(Variant(GameCenterChallenge.parseChallenge(challenge)))
+					if challenge.state == .invalid {
+						// We found an invalid challenge, not sure how to deal with this as we can't decline it
+						GD.pushWarning("Found invalid challenge \(challenge)")
+					} else {
+						result.append(Variant(GameCenterChallenge.parseChallenge(challenge)))
+					}
 				}
 
 				onComplete.callDeferred(Variant(OK), Variant(result))
@@ -57,16 +62,22 @@ extension GameCenter {
 	/// Provides a challenge compose view controller with preselected player identifiers and a message.
 	///
 	/// > NOTE: This function will load a leaderboard filtered on the local player with a timeScope of ``GKLeaderboard.TimeScope.today``
+	/// 	leaderboards come in two types, "best score" or "most recent". If you use a "best score" leaderboard only todays best score can be used
+	/// 	so if you want a player to be able to issue a challenge with their latest score you need to use a "most recent" leaderboard
 	///
 	/// - Parameters:
-	/// 	- leaderboardID: The ID of the leaderboard to load scores for
+	/// 	- leaderboardID: The ID of the leaderboard to load scores for.
 	/// 	- receiverID: The ID of the player to receive the challenge
-	/// 	- message: The preformatted, player-editable message that GameKit sends to the players in the challenge.
+	/// 	- message: The preformatted message that GameKit sends to the players in the challenge.
 	/// 	- onComplete: Callback with parameters: (error: Variant, receivers: Variant) -> (error: Int, receivers: [``String``])
-	func issueScoreChallenge(leaderboardID: String, receiverID: String, message: String, onComplete: Callable) {
+	func issueScoreChallenge(
+		leaderboardID: String,
+		receiverID: String,
+		message: String,
+		onComplete: Callable
+	) {
 		Task {
 			do {
-				GD.print("Inviting user with id: \(receiverID) to a challenge")
 				let friends = try await GKLocalPlayer.local.loadChallengableFriends()
 				guard let receiver = friends.first(where: { $0.gamePlayerID == receiverID }) else {
 					onComplete.callDeferred(
@@ -97,9 +108,7 @@ extension GameCenter {
 								sentPlayers in
 
 								var players = GArray()
-								GD.print("[GameCenter] Challenge sent to:")
 								for player: String in sentPlayers ?? [] {
-									GD.print("- ID: \(player)")
 									players.append(Variant(player))
 								}
 
@@ -165,43 +174,71 @@ extension GameCenter {
 
 	// MARK: Internal
 
-	func player(_ player: GKPlayer, didComplete challenge: GKChallenge, issuedByFriend friendPlayer: GKPlayer) {
-		GD.print("[GameCenter] You completed the challenge from \(friendPlayer.displayName)")
-		// emit(
-		// 	signal: GameCenter.challengeCompleted,
-		// 	GameCenterChallenge(challenge),
-		// 	GameCenterPlayer(friendPlayer)
-		// )
+	/// Handles when a challenge is received.
+	func player(_ player: GKPlayer, didReceive challenge: GKChallenge) {
+		if let issuingPlayer = challenge.issuingPlayer {
+			// You recieved a challenge from issuingPlayer
+			emit(
+				signal: GameCenter.challengeReceived,
+				GameCenterChallenge.parseChallenge(challenge),
+				GameCenterPlayer(issuingPlayer)
+			)
+		} else {
+			GD.pushWarning("[GameCenter] You recieved challenge from an unknown player: \(challenge)")
+		}
 	}
 
+	// Handles when a challenge is completed.
+	func player(_ player: GKPlayer, didComplete challenge: GKChallenge, issuedByFriend friendPlayer: GKPlayer) {
+		// This seems to be triggered on both sides of the challenge so we do some checks
+		if let issuingPlayer = challenge.issuingPlayer {
+			if issuingPlayer == player {
+				// Your challange was completed by friendPlayer
+				emit(
+					signal: GameCenter.issuedChallengeCompleted,
+					GameCenterChallenge.parseChallenge(challenge),
+					GameCenterPlayer(friendPlayer)
+				)
+			} else {
+				// You completed chalenge from issuingPlayer
+				emit(
+					signal: GameCenter.challengeCompleted,
+					GameCenterChallenge.parseChallenge(challenge),
+					GameCenterPlayer(issuingPlayer)
+				)
+			}
+		} else {
+			GD.print(
+				"[GameCenter] A challenge without issuer was completed: \(challenge) (friendPlayer: \(friendPlayer))"
+			)
+		}
+	}
+
+	// Handles when a friend completes a challenge that the local player issues.
+	// NOTE: Does not seem to trigger at all
 	func player(
 		_ player: GKPlayer,
 		issuedChallengeWasCompleted challenge: GKChallenge,
 		byFriend friendPlayer: GKPlayer
 	) {
-		GD.print("[GameCenter] Your issued challenge was completed by \(friendPlayer.displayName)")
+		GD.print("[GameCenter] Your issued challenge was completed by: \(friendPlayer.displayName))")
 
-		emit(
-			signal: GameCenter.issuedChallengeCompleted,
-			GameCenterChallenge.parseChallenge(challenge),
-			GameCenterPlayer(friendPlayer)
-		)
-	}
-
-	func player(_ player: GKPlayer, wantsToPlay challenge: GKChallenge) {
-		GD.print("[GameCenter] Your issued challenge was accepted \(player.displayName)")
 		// emit(
-		// 	signal: GameCenter.issuedChallengeAccepted,
-		// 	GameCenterChallenge(challenge),
-		// 	GameCenterPlayer(player)
+		// 	signal: GameCenter.issuedChallengeCompleted,
+		// 	GameCenterChallenge.parseChallenge(challenge),
+		// 	GameCenterPlayer(friendPlayer)
 		// )
 	}
 
-	func player(_ player: GKPlayer, didReceive challenge: GKChallenge) {
-		GD.print("[GameCenter] Your challenge was received by \(player.displayName)")
+	/// Handles when the local player issues a challenge and the other player accepts.
+	// NOTE: Does not seem to trigger at all
+	func player(_ player: GKPlayer, wantsToPlay challenge: GKChallenge) {
+		GD.print(
+			"[GameCenter] Your issued challenge was accepted (player: \(player.displayName), challenge: \(challenge))"
+		)
 		// emit(
-		// 	signal: GameCenter.issuedChallengeReceived,
-		// 	GameCenterChallenge(challenge),
+		// 	signal: GameCenter.issuedChallengeAccepted,
+		// 	GameCenterChallenge.parseChallenge(challenge),
 		// 	GameCenterPlayer(player)
 		// )
 	}

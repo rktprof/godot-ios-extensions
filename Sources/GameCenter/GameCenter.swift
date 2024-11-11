@@ -32,30 +32,31 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		case failedToLoadPicture = 8
 	}
 
+	/// Signal called when a challenge was received
+	#signal("challenge_received", arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self])
+
 	/// Signal called when you completed a challenge
-	#signal(
-		"challenge_completed",
-		arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self]
-	)
-	/// Signal called when a challenge was accepted
-	#signal(
-		"issued_challenge_accepted",
-		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
-	)
+	#signal("challenge_completed", arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self])
+
 	/// Signal called when a challenge was completed
 	#signal(
 		"issued_challenge_completed",
 		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
 	)
-	/// Signal called when a challenge was received but not yet accepted
-	#signal(
-		"issued_challenge_received",
-		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
-	)
+
+	/// Signal called when a challenge was accepted
+	/// > NOTE: Accepting challenges does not seem to be a thing anymore
+	// #signal(
+	// 	"issued_challenge_accepted",
+	// 	arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
+	// )
+
 	/// Signal called when an invite is accepted
 	#signal("invite_accepted", arguments: ["from": String.self, "index": Int.self])
+
 	/// Signal called when an invite is removed
 	#signal("invite_removed", arguments: ["index": Int.self])
+
 	/// Signal called when an invite is send
 	#signal("invite_sent", arguments: ["to": GArray.self])
 
@@ -119,6 +120,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 				GKLocalPlayer.local.register(self.inviteDelegate!)
 			}
 
+			if self.challengeDelegate != nil {
+				GKLocalPlayer.local.register(self.challengeDelegate!)
+			}
+
 			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
 			onComplete.callDeferred(Variant(OK), Variant(player))
 		}
@@ -134,6 +139,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 			if self.inviteDelegate != nil {
 				GKLocalPlayer.local.register(self.inviteDelegate!)
+			}
+
+			if self.challengeDelegate != nil {
+				GKLocalPlayer.local.register(self.challengeDelegate!)
 			}
 
 			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
@@ -156,6 +165,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 			if self.inviteDelegate != nil {
 				GKLocalPlayer.local.register(self.inviteDelegate!)
+			}
+
+			if self.challengeDelegate != nil {
+				GKLocalPlayer.local.register(self.challengeDelegate!)
 			}
 
 			var player = GameCenterPlayerLocal(GKLocalPlayer.local)
@@ -278,7 +291,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		hideAccessPoint()
 	}
 
-	// Achievements
+	// MARK: Achievements
 
 	@Callable
 	func set_achievement_progress(achievementID: String, percentComplete: Float, onComplete: Callable) {
@@ -325,7 +338,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		showAchievementOverlay(achievementdID: achievementdID, onClose: onClose)
 	}
 
-	// Challenges
+	// MARK: Challenges
 
 	@Callable
 	func load_received_challenges(onComplete: Callable) {
@@ -357,7 +370,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		showChallengesOverlay(onClose: onClose)
 	}
 
-	// Friends
+	// MARK: Friends
 
 	@Callable
 	func load_friends(onComplete: Callable) {
@@ -389,7 +402,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		showFriendRequestCreator()
 	}
 
-	// Leaderboards
+	// MARK: Leaderboards
 
 	@Callable
 	func submit_score(score: Int, leaderboardIDs: [String], onComplete: Callable) {
@@ -431,7 +444,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		showLeaderboardOverlay(leaderboardID: leaderboardID, onClose: onClose)
 	}
 
-	// Invites
+	// MARK: Invites
 
 	@Callable
 	func get_invite(withIndex index: Int, onComplete: Callable) {
