@@ -43,7 +43,7 @@ This also means that you can only get Variants back from the plugin, which means
 For example, in order to get GameCenter friends you do something like this
 ```gdscript
 func get_friends(on_complete: Callable) -> void:
-  _game_center.loadFriends(func(error: Variant, data: Variant) -> void:
+  _game_center.load_friends(func(error: Variant, data: Variant) -> void:
     var friends: Array[Friend] = []
     if error != OK:
       on_complete.call(friends)
