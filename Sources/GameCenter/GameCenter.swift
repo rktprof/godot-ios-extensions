@@ -378,7 +378,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	@Callable
-	func load_Recent_players(onComplete: Callable) {
+	func load_recent_players(onComplete: Callable) {
 		loadRecentPlayers(onComplete: onComplete)
 	}
 
