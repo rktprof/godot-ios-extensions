@@ -74,7 +74,12 @@ build_macos() {
 
 	echo "${BOLD}${GREEN}macOS build succeeded${RESET_FORMATTING}"
 
-	product_path="$BUILD_PATH_MACOS/arm64-apple-macosx/$1"
+	if [[ $(uname -m) == "x86_64" ]]; then
+		product_path="$BUILD_PATH_MACOS/x86_64-apple-macosx/$1"
+	else
+		product_path="$BUILD_PATH_MACOS/arm64-apple-macosx/$1"
+	fi
+ 
 	source_path="Sources"
 	for folder in $source_path/*
 	do
