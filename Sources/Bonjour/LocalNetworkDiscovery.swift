@@ -62,12 +62,13 @@ class LocalNetworkDiscovery: RefCounted {
 		browser = nil
 	}
 
+	// MARK: Internal
+
 	/// Resolve a Bonjour endpoint into an ip address and port.
 	///
 	/// - Parameters:
 	///		- hashValue: The hash value for the discovered bonjour service.
 	///		- onComplete: Callback with parameter: (error: Variant, address: Variant, port: Variant) -> (error: Int, address: String, port: Int)
-	@Callable
 	func resolveEndpoint(hashValue: Int, onComplete: Callable) {
 		// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
 		if let result: NWBrowser.Result = discoveredDevices[hashValue] {
@@ -211,9 +212,14 @@ class LocalNetworkDiscovery: RefCounted {
 		}
 	}
 
-	// Helpers
-
 	func ipAddressToString(_ address: IPv4Address) -> String {
 		return String("\(address.rawValue[0]).\(address.rawValue[1]).\(address.rawValue[2]).\(address.rawValue[3])")
+	}
+
+	// MARK: Godot callables
+
+	@Callable
+	func resolve_endpoint(hashValue: Int, onComplete: Callable) {
+		resolveEndpoint(hashValue: hashValue, onComplete: onComplete)
 	}
 }
