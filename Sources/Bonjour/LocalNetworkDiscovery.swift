@@ -106,7 +106,7 @@ class LocalNetworkDiscovery: RefCounted {
 							if let ipv4Address = address.asIPv4 {
 								address_string = self.ipAddressToString(ipv4Address)
 							} else {
-								GD.pushError("Failed to resolve endpoint: Got incompatible IPv6 address")
+								GD.pushError("[Bonjour] Failed to resolve endpoint: Got incompatible IPv6 address")
 								onComplete.callDeferred(
 									Variant(NetworkDiscoveryError.incompatibleIPV6Address.rawValue),
 									Variant(),
@@ -126,7 +126,7 @@ class LocalNetworkDiscovery: RefCounted {
 			}
 			connection?.start(queue: DispatchQueue.global(qos: .userInteractive))
 		} else {
-			GD.pushError("Found no endpoint corresponding to the hashValue \(hashValue)")
+			GD.pushError("[Bonjour] Failed to resolve endpoint. Error: No endpoint corresponding to: \(hashValue)")
 			onComplete.callDeferred(
 				Variant(NetworkDiscoveryError.failedToResolveEndpoint.rawValue),
 				Variant(),
@@ -138,7 +138,7 @@ class LocalNetworkDiscovery: RefCounted {
 	func stateChanged(to newState: NWBrowser.State) {
 		switch newState {
 		case .failed(let error):
-			GD.pushError("LocalNetworkDiscovery failed: \(error)")
+			GD.pushError("[Bonjour] LocalNetworkDiscovery failed: \(error)")
 		default:
 			break
 		}

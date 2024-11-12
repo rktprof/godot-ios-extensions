@@ -32,16 +32,16 @@ class LocalNetworkListener: RefCounted {
 
 			self.listener = listener
 		} catch {
-			GD.pushError("Failed to start LocalNetworkListener: \(error)")
+			GD.pushError("[Bonjour] Failed to start LocalNetworkListener: \(error)")
 		}
 	}
 
 	/// Stop listening for incoming network connections.
 	@Callable
 	func stop() {
+		listener?.cancel()
 		listener?.stateUpdateHandler = nil
 		listener?.newConnectionHandler = nil
-		listener?.cancel()
 	}
 
 	func stateChanged(to newState: NWListener.State) {
@@ -49,7 +49,7 @@ class LocalNetworkListener: RefCounted {
 		case .ready:
 			break
 		case .failed(let error):
-			GD.pushError("LocalNetworkListener failed, error: \(error)")
+			GD.pushError("[Bonjour] Listener failed. Error: \(error)")
 			break
 		case .setup:
 			break
@@ -61,12 +61,12 @@ class LocalNetworkListener: RefCounted {
 	}
 
 	func serviceRegistrationChange(change: NWListener.ServiceRegistrationChange) {
-		switch change {
-		case .add(let endpoint):
-			GD.print("LocalNetworkListener added: \(endpoint)")
-		case .remove(let endpoint):
-			GD.print("LocalNetworkListener removed: \(endpoint)")
-		}
+		// switch change {
+		// case .add(let endpoint):
+		// 	GD.print("[Bonjour] Added endpoint: \(endpoint)")
+		// case .remove(let endpoint):
+		// 	GD.print("[Bonjour] Removed endpoint: \(endpoint)")
+		// }
 	}
 
 	func newConnection(connection: NWConnection) {
