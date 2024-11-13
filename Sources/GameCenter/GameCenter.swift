@@ -373,13 +373,13 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	// MARK: Friends
 
 	@Callable
-	func load_friends(onComplete: Callable) {
-		loadFriends(onComplete: onComplete)
+	func load_friends(includeImages: Bool, onComplete: Callable) {
+		loadFriends(onComplete: onComplete, includeImages: includeImages)
 	}
 
 	@Callable
-	func load_recent_players(onComplete: Callable) {
-		loadRecentPlayers(onComplete: onComplete)
+	func load_recent_players(includeImages: Bool, onComplete: Callable) {
+		loadRecentPlayers(onComplete: onComplete, includeImages: includeImages)
 	}
 
 	@Callable

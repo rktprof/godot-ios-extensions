@@ -13,15 +13,21 @@ extension GameCenter {
 	/// Load the friends of the authenticated player.
 	///
 	/// - Parameters:
-	/// 	- onComplete: Callback with parameters: (error: Variant, friends: Variant) -> (error: Int, friends: [``GameCenterPlayer``])
-	func loadFriends(onComplete: Callable) {
+	///   - onComplete: Callback with parameters: (error: Variant, friends: Variant) -> (error: Int, friends: [``GameCenterPlayer``])
+	///   - includeImages: If true images will be loaded for each player
+	func loadFriends(onComplete: Callable, includeImages: Bool = true) {
 		Task {
 			do {
 				var players = GArray()
 				self.friends = try await GKLocalPlayer.local.loadFriends()
 
 				for friend in self.friends ?? [] {
-					players.append(Variant(GameCenterPlayer(friend)))
+					var player = GameCenterPlayer(friend)
+					if includeImages, let image = try? await friend.loadImage(size: .small) {
+						player.profilePicture = image
+					}
+
+					players.append(Variant(player))
 				}
 
 				onComplete.callDeferred(Variant(OK), Variant(players))
@@ -35,16 +41,21 @@ extension GameCenter {
 
 	/// Loads players from the friends list or players that recently participated in a game with the local player.
 	///
-	/// - Parameters
-	/// 	- onComplete: Callback with parameters: (error: Variant, players: Variant) -> (error: Int, players: [``GameCenterPlayer``])
-	func loadRecentPlayers(onComplete: Callable) {
+	/// - Parameters:
+	///	  - onComplete: Callback with parameters: (error: Variant, players: Variant) -> (error: Int, players: [``GameCenterPlayer``])
+	///   - includeImages: If true images will be loaded for each player
+	func loadRecentPlayers(onComplete: Callable, includeImages: Bool = true) {
 		Task {
 			do {
 				var players = GArray()
 				let recentPlayers = try await GKLocalPlayer.local.loadRecentPlayers()
 
-				for player in recentPlayers {
-					players.append(Variant(GameCenterPlayer(player)))
+				for recentPlayer in recentPlayers {
+					var player = GameCenterPlayer(recentPlayer)
+					if includeImages, let image = try? await recentPlayer.loadImage(size: .small) {
+						player.profilePicture = image
+					}
+					players.append(Variant(player))
 				}
 
 				onComplete.callDeferred(Variant(OK), Variant(players))
@@ -63,7 +74,7 @@ extension GameCenter {
 	/// 	- onComplete: Callback with parameters: (error: Variant, data: Variant) -> (error: Int, data: Image)
 	func loadFriendPicture(gamePlayerID: String, onComplete: Callable) {
 		if friends == nil {
-			loadFriends(onComplete: Callable())
+			loadFriends(onComplete: Callable(), includeImages: false)
 		}
 
 		Task {
