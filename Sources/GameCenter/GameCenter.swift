@@ -435,6 +435,11 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	@Callable
+	func get_local_player_entry(leaderboardID: String, onComplete: Callable) {
+		getLocalPlayerEntry(loaderboardID: leaderboardID, onComplete: onComplete)
+	}
+
+	@Callable
 	func show_leaderboards_overlay(onClose: Callable) {
 		showLeaderboardsOverlay(onClose: onClose)
 	}

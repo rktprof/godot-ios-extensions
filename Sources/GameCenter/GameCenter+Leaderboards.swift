@@ -32,6 +32,20 @@ extension GameCenter {
 		}
 	}
 
+	/// Get personal best for a leaderboard
+	///
+	/// - Parameters:
+	///    - leaderboardID: The identifier for the leaderboard that you enter in App Store Connect
+	///    - onComplete: Callback with parameters: (error: Variant, localPlayer: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry)
+	func getLocalPlayerEntry(loaderboardID: String, onComplete: Callable) {
+		loadLeaderboard(
+			for: [GKLocalPlayer.local],
+			leaderboardID: loaderboardID,
+			time: .allTime,
+			onComplete: onComplete
+		)
+	}
+
 	/// Get global leaderboard.
 	///
 	/// - Parameters:
@@ -185,6 +199,56 @@ extension GameCenter {
 					Variant(),
 					Variant(),
 					Variant(0)
+				)
+			}
+		}
+	}
+
+	func loadLeaderboard(
+		for players: [GKPlayer],
+		leaderboardID: String,
+		time: GKLeaderboard.TimeScope,
+		onComplete: Callable
+	) {
+		Task {
+			do {
+				let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				if let leaderboard = leaderboards.first {
+					let (local, entries) = try await leaderboard.loadEntries(
+						for: players,
+						timeScope: time
+					)
+
+					// Add the local player
+					var localPlayer = Variant()
+					if let local: GKLeaderboard.Entry {
+						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
+					}
+
+					// Get all the players in range
+					var players = GArray()
+					for entry in entries {
+						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
+					}
+
+					onComplete.call(
+						Variant(OK),
+						localPlayer,
+						Variant(players)
+					)
+				} else {
+					onComplete.call(
+						Variant(LeaderboardError.failedToLoadEntries.rawValue),
+						Variant(),
+						Variant()
+					)
+				}
+			} catch {
+				GD.pushError("Failed to get leaderboard: \(error)")
+				onComplete.callDeferred(
+					Variant(LeaderboardError.failedToLoadEntries.rawValue),
+					Variant(),
+					Variant()
 				)
 			}
 		}
