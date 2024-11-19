@@ -351,10 +351,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	@Callable
-	func issue_score_challenge(leaderboardID: String, receiverID: String, message: String, onComplete: Callable) {
+	func issue_score_challenge(leaderboardID: String, receivers: [String], message: String, onComplete: Callable) {
 		issueScoreChallenge(
 			leaderboardID: leaderboardID,
-			receiverID: receiverID,
+			receivers: receivers,
 			message: message,
 			onComplete: onComplete
 		)

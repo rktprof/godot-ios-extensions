@@ -72,20 +72,14 @@ extension GameCenter {
 	/// 	- onComplete: Callback with parameters: (error: Variant, receivers: Variant) -> (error: Int, receivers: [``String``])
 	func issueScoreChallenge(
 		leaderboardID: String,
-		receiverID: String,
+		receivers: [String],
 		message: String,
 		onComplete: Callable
 	) {
 		Task {
 			do {
 				let friends = try await GKLocalPlayer.local.loadChallengableFriends()
-				guard let receiver = friends.first(where: { $0.gamePlayerID == receiverID }) else {
-					onComplete.callDeferred(
-						Variant(ChallengeError.failedToLoadChallengableFriend.rawValue),
-						Variant(false)
-					)
-					return
-				}
+				let receivers = friends.filter { receivers.contains($0.gamePlayerID) }
 
 				let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
 				if let leaderboard: GKLeaderboard = try await leaderboards.first {
@@ -101,7 +95,7 @@ extension GameCenter {
 							// as [String]? instead of the iOS 17+ [GKPlayer]? version for simplicity
 							let challengeComposer = local.challengeComposeController(
 								withMessage: message,
-								players: [receiver]
+								players: receivers
 							) {
 								composeController,
 								didIssueChallenge,
