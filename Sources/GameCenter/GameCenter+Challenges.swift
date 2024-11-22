@@ -169,6 +169,9 @@ extension GameCenter {
 	// MARK: Internal
 
 	/// Handles when a challenge is received.
+	///
+	/// > NOTE: For some reason the issuingPlayer here is not complete, it does not contain gamePlayerID etc, just
+	///    displayName and some other metadata
 	func player(_ player: GKPlayer, didReceive challenge: GKChallenge) {
 		if let issuingPlayer = challenge.issuingPlayer {
 			// You recieved a challenge from issuingPlayer
@@ -187,14 +190,14 @@ extension GameCenter {
 		// This seems to be triggered on both sides of the challenge so we do some checks
 		if let issuingPlayer = challenge.issuingPlayer {
 			if issuingPlayer == player {
-				// Your challange was completed by friendPlayer
+				// Your challenge was completed by friendPlayer
 				emit(
 					signal: GameCenter.issuedChallengeCompleted,
 					GameCenterChallenge.parseChallenge(challenge),
 					GameCenterPlayer(friendPlayer)
 				)
 			} else {
-				// You completed chalenge from issuingPlayer
+				// You completed challenge from issuingPlayer
 				emit(
 					signal: GameCenter.challengeCompleted,
 					GameCenterChallenge.parseChallenge(challenge),
