@@ -231,13 +231,13 @@ extension GameCenter {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
 
-					onComplete.call(
+					onComplete.callDeferred(
 						Variant(OK),
 						localPlayer,
 						Variant(players)
 					)
 				} else {
-					onComplete.call(
+					onComplete.callDeferred(
 						Variant(LeaderboardError.failedToLoadEntries.rawValue),
 						Variant(),
 						Variant()
