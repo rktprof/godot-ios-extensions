@@ -274,7 +274,7 @@ class InAppPurchase: RefCounted {
 	func getProduct(_ productIdentifier: String) async throws -> Product? {
 		var product: [Product] = []
 		do {
-			product = try await Product.products(for: ["identifier"])
+			product = try await Product.products(for: [productIdentifier])
 		} catch {
 			GD.pushError("Unable to get product with identifier: \(productIdentifier): \(error)")
 		}
