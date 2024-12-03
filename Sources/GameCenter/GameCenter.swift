@@ -440,6 +440,11 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	@Callable
+	func get_previous_local_player_entry(leaderboardID: String, onComplete: Callable) {
+		getPreviousLocalPlayerEntry(loaderboardID: leaderboardID, onComplete: onComplete)
+	}
+
+	@Callable
 	func show_leaderboards_overlay(onClose: Callable) {
 		showLeaderboardsOverlay(onClose: onClose)
 	}

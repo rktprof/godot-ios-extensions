@@ -84,6 +84,20 @@ extension GameCenter {
 		)
 	}
 
+	/// Get the previous occurance of personal best for a leaderboard
+	///
+	/// - Parameters:
+	///    - leaderboardID: The identifier for the leaderboard that you enter in App Store Connect
+	///    - onComplete: Callback with parameters: (error: Variant, localPlayer: Variant) -> (error: Int, localPlayer: GameCenterLeaderboardEntry)
+	func getPreviousLocalPlayerEntry(loaderboardID: String, onComplete: Callable) {
+		loadPreviousLeaderboard(
+			for: [GKLocalPlayer.local],
+			leaderboardID: loaderboardID,
+			time: .allTime,
+			onComplete: onComplete
+		)
+	}
+
 	/// Get the previous occurance of a recurring global leaderboard.
 	///
 	/// - Parameters:
