@@ -163,7 +163,7 @@ extension GameCenter {
 	) {
 		Task {
 			do {
-				let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
 				if let leaderboard: GKLeaderboard = leaderboards.first {
 					let (local, entries, count) = try await leaderboard.loadEntries(
 						for: scope,
@@ -263,8 +263,8 @@ extension GameCenter {
 	) {
 		Task {
 			do {
-				let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
-				if let leaderboard: GKLeaderboard = try await leaderboards.first?.loadPreviousOccurrence() {
+				let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				if let leaderboard = try await leaderboards.first?.loadPreviousOccurrence() {
 					let (local, entries, count) = try await leaderboard.loadEntries(
 						for: scope,
 						timeScope: time,
@@ -278,8 +278,8 @@ extension GameCenter {
 					}
 
 					// Get all the players in range
-					var players: GArray = GArray()
-					for entry: GKLeaderboard.Entry in entries {
+					var players = GArray()
+					for entry in entries {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
 
@@ -299,6 +299,56 @@ extension GameCenter {
 					Variant(),
 					Variant(),
 					Variant(0)
+				)
+			}
+		}
+	}
+
+	func loadPreviousLeaderboard(
+		for players: [GKPlayer],
+		leaderboardID: String,
+		time: GKLeaderboard.TimeScope,
+		onComplete: Callable
+	) {
+		Task {
+			do {
+				let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				if let leaderboard = try await leaderboards.first?.loadPreviousOccurrence() {
+					let (local, entries) = try await leaderboard.loadEntries(
+						for: players,
+						timeScope: time
+					)
+
+					// Add the local player
+					var localPlayer = Variant()
+					if let local: GKLeaderboard.Entry {
+						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
+					}
+
+					// Get all the players in range
+					var players = GArray()
+					for entry in entries {
+						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
+					}
+
+					onComplete.callDeferred(
+						Variant(OK),
+						localPlayer,
+						Variant(players)
+					)
+				} else {
+					onComplete.callDeferred(
+						Variant(LeaderboardError.failedToLoadEntries.rawValue),
+						Variant(),
+						Variant()
+					)
+				}
+			} catch {
+				GD.pushError("Failed to get leaderboard: \(error)")
+				onComplete.callDeferred(
+					Variant(LeaderboardError.failedToLoadEntries.rawValue),
+					Variant(),
+					Variant()
 				)
 			}
 		}
