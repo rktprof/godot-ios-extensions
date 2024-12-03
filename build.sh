@@ -2,7 +2,7 @@
 
 # MARK: Help
 
-# Syntax: ./build.sh [-f] <platform?> <config?>"
+# Syntax: ./build.sh <platform?> <config?>"
 # Valid platforms are: mac, ios & all (Default: all)
 # Valid configurations are: debug & release (Default: release)
 
@@ -121,23 +121,6 @@ build_libs() {
 	echo "${BOLD}${GREEN}Finished building $2 libraries for $1 platforms${RESET_FORMATTING}"
 }
 
-await() {
-	local pid=$1
-	local values="-\|/"
-	local i=0
-
-	while kill -0 $pid 2>/dev/null
-	do
-		local i=$(i + 1)
-		printf "%s" "$values:$i"
-		echo -en "\r"
-		sleep .1
-	done
-
-	wait $pid
-	return $?
-}
-
 # MARK: Formatting
 BOLD="$(tput bold)"
 GREEN="$(tput setaf 2)"
@@ -146,5 +129,4 @@ RED="$(tput setaf 1)"
 RESET_FORMATTING="$(tput sgr0)"
 
 # MARK: Run
-#await sleep 1
 build_libs "$TARGET" "$CONFIG"
