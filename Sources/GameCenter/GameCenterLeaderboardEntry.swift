@@ -19,7 +19,7 @@ class GameCenterLeaderboardEntry: RefCounted {
 	@Export var date: Double?
 	@Export var image: Image?
 
-	convenience init(entry: GKLeaderboard.Entry, image: Image? = nil) {
+	convenience init(entry: GKLeaderboard.Entry, image: Image? = nil, excludeDate: Bool = false) {
 		self.init()
 
 		self.context = entry.context
@@ -33,7 +33,10 @@ class GameCenterLeaderboardEntry: RefCounted {
 
 		#if canImport(Foundation)
 		// In order to read Date we need foundation, otherwise we crash
-		//self.date = entry.date.timeIntervalSince1970
+		// We also crash when reading date from entries within challenges for some reason
+		if !excludeDate {
+			self.date = entry.date.timeIntervalSince1970
+		}
 		#endif
 	}
 }
