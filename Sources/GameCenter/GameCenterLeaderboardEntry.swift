@@ -35,7 +35,7 @@ class GameCenterLeaderboardEntry: RefCounted {
 		// In order to read Date we need foundation, otherwise we crash
 		// We also crash when reading date from entries within challenges for some reason
 		if !excludeDate {
-			self.date = entry.date.timeIntervalSince1970
+			//self.date = entry.date.timeIntervalSince1970
 		}
 		#endif
 	}
