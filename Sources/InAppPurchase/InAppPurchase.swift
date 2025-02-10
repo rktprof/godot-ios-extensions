@@ -97,6 +97,8 @@ class InAppPurchase: RefCounted {
 						let transaction: Transaction = try checkVerified(verification)
 						await transaction.finish()
 
+						self.purchasedProducts.insert(transaction.productID)
+
 						onComplete.callDeferred(
 							Variant(OK),
 							Variant(InAppPurchaseStatus.purchaseOK.rawValue)
