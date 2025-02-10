@@ -1,6 +1,3 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
-
 import StoreKit
 import SwiftGodot
 
@@ -69,7 +66,7 @@ class InAppPurchase: RefCounted {
 	/// - Parameters:
 	/// 	- productIdentifiers: An array of product identifiers that you enter in App Store Connect.
 	@Callable
-	func initialize(productIDs: [String]) {
+	func initialize(productIDs: [String], onComplete: Callable) {
 		self.productIDs = productIDs
 
 		updateListenerTask = self.listenForTransactions()
@@ -77,6 +74,8 @@ class InAppPurchase: RefCounted {
 		Task {
 			await updateProducts()
 			await updateProductStatus()
+
+			onComplete.callDeferred()
 		}
 	}
 
