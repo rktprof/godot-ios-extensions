@@ -100,7 +100,6 @@ class LocalNetworkDiscovery: RefCounted {
 			connection?.stateUpdateHandler = { state in
 				switch state {
 				case .ready:
-					GD.print("[Bonjour] # LocalNetworkDiscovery ready")
 					if let innerEndpoint: NWEndpoint = self.connection?.currentPath?.remoteEndpoint,
 						case .hostPort(let host, let tempPort) = innerEndpoint
 					{
