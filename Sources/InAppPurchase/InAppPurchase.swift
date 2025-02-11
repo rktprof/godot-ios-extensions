@@ -177,8 +177,9 @@ class InAppPurchase: RefCounted {
 						product.type = IAPProduct.TYPE_UNKNOWN
 					}
 
-					onComplete.callDeferred(Variant(OK), Variant(products))
+					products.append(Variant(product))
 				}
+				onComplete.callDeferred(Variant(OK), Variant(products))
 			} catch {
 				GD.pushError("Failed to get products from App Store, error: \(error)")
 				onComplete.callDeferred(
