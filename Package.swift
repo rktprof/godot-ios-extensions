@@ -35,6 +35,11 @@ let package = Package(
 			type: .dynamic,
 			targets: ["InAppPurchase"]
 		),
+		.library(
+			name: "Settings",
+			type: .dynamic,
+			targets: ["Settings"]
+		),
 	],
 
 	// MARK: Dependencies
@@ -61,6 +66,11 @@ let package = Package(
 		),
 		.target(
 			name: "InAppPurchase",
+			dependencies: ["SwiftGodot"],
+			swiftSettings: swiftSettings
+		),
+		.target(
+			name: "Settings",
 			dependencies: ["SwiftGodot"],
 			swiftSettings: swiftSettings
 		),
