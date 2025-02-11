@@ -16,6 +16,14 @@ class LocalNetworkDiscovery: RefCounted {
 		"device_updated",
 		arguments: ["name": String.self, "port": Int.self, "old_hash_value": Int.self, "new_hash_value": Int.self]
 	)
+	/// Signal that triggers when the local network permission is known
+	#signal("permission_denied")
+
+	enum LocalNetworkStatus: Int {
+		case permissionGranted = 0
+		case permissionDenied = 1
+		case error = 2
+	}
 
 	enum NetworkDiscoveryError: Int, Error {
 		case failedToResolveEndpoint = 1
@@ -92,6 +100,7 @@ class LocalNetworkDiscovery: RefCounted {
 			connection?.stateUpdateHandler = { state in
 				switch state {
 				case .ready:
+					GD.print("[Bonjour] # LocalNetworkDiscovery ready")
 					if let innerEndpoint: NWEndpoint = self.connection?.currentPath?.remoteEndpoint,
 						case .hostPort(let host, let tempPort) = innerEndpoint
 					{
@@ -139,6 +148,8 @@ class LocalNetworkDiscovery: RefCounted {
 		switch newState {
 		case .failed(let error):
 			GD.pushError("[Bonjour] LocalNetworkDiscovery failed: \(error)")
+		case let .waiting(error):
+			emit(signal: LocalNetworkDiscovery.permissionDenied)
 		default:
 			break
 		}
