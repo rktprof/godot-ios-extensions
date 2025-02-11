@@ -100,6 +100,9 @@ onComplete.callDeferred(Variant(LeaderboardError.failedToLoadEntries.rawValue), 
 **Device**
 - Taptic Engine (Simple taps & extended vibrations)
 
+**OS**
+- Settings.bundle support (Read and write from app settings under system settings)
+
 ## TODO: (assuming I can figure it out)
 
 Basic plugin documentation (for now, feel free to create an issue with a question)
