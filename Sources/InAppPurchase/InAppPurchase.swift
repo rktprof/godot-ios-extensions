@@ -301,10 +301,8 @@ class InAppPurchase: RefCounted {
 
 			if transaction.revocationDate == nil {
 				self.purchasedProducts.insert(transaction.productID)
-				emit(signal: InAppPurchase.productPurchased, transaction.productID)
 			} else {
 				self.purchasedProducts.remove(transaction.productID)
-				emit(signal: InAppPurchase.productRevoked, transaction.productID)
 			}
 		}
 	}
@@ -323,6 +321,11 @@ class InAppPurchase: RefCounted {
 			for await result: VerificationResult<Transaction> in Transaction.updates {
 				do {
 					let transaction: Transaction = try self.checkVerified(result)
+					if transaction.revocationDate == nil {
+						self.emit(signal: InAppPurchase.productPurchased, transaction.productID)
+					} else {
+						self.emit(signal: InAppPurchase.productRevoked, transaction.productID)
+					}
 
 					await self.updateProductStatus()
 					await transaction.finish()
