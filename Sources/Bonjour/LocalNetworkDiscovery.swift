@@ -8,16 +8,13 @@ class LocalNetworkDiscovery: RefCounted {
 	/// Signal that triggers when a device is discovered
 	///
 	/// > NOTE: If you need the address of the device you can use `resolveEndpoint` with the hash_value
-	#signal("device_discovered", arguments: ["name": String.self, "port": Int.self, "hash_value": Int.self])
+	@Signal var deviceDiscovered: SignalWithArguments<String, Int, Int>
 	/// Signal that triggers when a device is lost
-	#signal("device_lost", arguments: ["name": String.self, "hash_value": Int.self])
+	@Signal var deviceLost: SignalWithArguments<String, Int>
 	/// Signal that triggers when a device is updated
-	#signal(
-		"device_updated",
-		arguments: ["name": String.self, "port": Int.self, "old_hash_value": Int.self, "new_hash_value": Int.self]
-	)
+	@Signal var deviceUpdated: SignalWithArguments<String, Int, Int, Int>
 	/// Signal that triggers when the local network permission is known
-	#signal("permission_denied")
+	@Signal var permissionDenied: SimpleSignal
 
 	enum LocalNetworkStatus: Int {
 		case permissionGranted = 0
@@ -35,7 +32,7 @@ class LocalNetworkDiscovery: RefCounted {
 	var discoveredDevices: [Int: (NWBrowser.Result)] = [:]
 
 	deinit {
-		self.stop()
+		stop()
 	}
 
 	/// Start looking for Bonjour devices on the local network.
@@ -50,8 +47,7 @@ class LocalNetworkDiscovery: RefCounted {
 				domain: "local."
 			)
 			let browser: NWBrowser = NWBrowser(for: descriptor, using: .tcp)
-
-			browser.stateUpdateHandler = self.stateChanged(to:)
+			browser.stateUpdateHandler = self.stateChanged
 			browser.browseResultsChangedHandler = self.resultsChanged
 
 			browser.start(queue: DispatchQueue.global(qos: .userInitiated))
@@ -62,14 +58,7 @@ class LocalNetworkDiscovery: RefCounted {
 	/// Stop looking for Bonjour devices
 	@Callable
 	func stop() {
-		if browser == nil {
-			return
-		}
-
-		browser?.stateUpdateHandler = nil
-		browser?.browseResultsChangedHandler = nil
 		browser?.cancel()
-		browser = nil
 	}
 
 	// MARK: Internal
@@ -123,8 +112,8 @@ class LocalNetworkDiscovery: RefCounted {
 									GD.pushError("[Bonjour] Failed to resolve endpoint: Got incompatible IPv6 address")
 									onComplete.callDeferred(
 										Variant(NetworkDiscoveryError.incompatibleIPV6Address.rawValue),
-										Variant(),
-										Variant()
+										nil,
+										nil
 									)
 									return
 								}
@@ -143,8 +132,8 @@ class LocalNetworkDiscovery: RefCounted {
 				GD.pushError("[Bonjour] Failed to resolve endpoint. Error: No endpoint corresponding to: \(hashValue)")
 				onComplete.callDeferred(
 					Variant(NetworkDiscoveryError.failedToResolveEndpoint.rawValue),
-					Variant(),
-					Variant()
+					nil,
+					nil
 				)
 			}
 		}
@@ -155,7 +144,7 @@ class LocalNetworkDiscovery: RefCounted {
 		case .failed(let error):
 			GD.pushError("[Bonjour] LocalNetworkDiscovery failed: \(error)")
 		case let .waiting(error):
-			emit(signal: LocalNetworkDiscovery.permissionDenied)
+			self.permissionDenied.emit()
 		default:
 			break
 		}
@@ -167,12 +156,12 @@ class LocalNetworkDiscovery: RefCounted {
 				switch change
 				{
 				case .added(let result):
-					var server_port: Int = 0
+					var serverPort: Int = 0
 
 					switch result.metadata
 					{
 					case .bonjour(let record):
-						server_port = Int(record.dictionary["port"] ?? "0") ?? 0
+						serverPort = Int(record.dictionary["port"] ?? "0") ?? 0
 					default:
 						break
 					}
@@ -180,12 +169,7 @@ class LocalNetworkDiscovery: RefCounted {
 					switch result.endpoint
 					{
 					case .service(let service):
-						self.emit(
-							signal: LocalNetworkDiscovery.deviceDiscovered,
-							service.name,
-							server_port,
-							result.hashValue
-						)
+						self.deviceDiscovered.emit(service.name, serverPort, result.hashValue)
 					default:
 						break
 					}
@@ -198,17 +182,17 @@ class LocalNetworkDiscovery: RefCounted {
 					switch result.endpoint
 					{
 					case .service(let service):
-						self.emit(signal: LocalNetworkDiscovery.deviceLost, service.name, result.hashValue)
+						self.deviceLost.emit(service.name, result.hashValue)
 					default:
 						break
 					}
 
 				case .changed(let old, let new, flags: _):
-					var server_port: Int = 0
+					var serverPort: Int = 0
 					switch new.metadata
 					{
 					case .bonjour(let record):
-						server_port = Int(record.dictionary["port"] ?? "0") ?? 0
+						serverPort = Int(record.dictionary["port"] ?? "0") ?? 0
 					default:
 						break
 					}
@@ -216,13 +200,7 @@ class LocalNetworkDiscovery: RefCounted {
 					switch new.endpoint
 					{
 					case .service(let service):
-						self.emit(
-							signal: LocalNetworkDiscovery.deviceUpdated,
-							service.name,
-							server_port,
-							old.hashValue,
-							new.hashValue
-						)
+						self.deviceUpdated.emit(service.name, serverPort, old.hashValue, new.hashValue)
 					default:
 						break
 					}

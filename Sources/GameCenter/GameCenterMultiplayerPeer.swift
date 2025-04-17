@@ -41,13 +41,17 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	/// Called when a match is finalized
 	///
 	/// > NOTE: This has no parameters to be compatible with the built-in `connected_to_server` signal
-	#signal("server_created")
+	@Signal var serverCreated: SimpleSignal
+	//#signal("server_created")
 	/// Called when the `MatchmakingStatus` changes
-	#signal("matchmaking_status_updated", arguments: ["status": Int.self])
+	@Signal var matchmakingStatusUpdated: SignalWithArguments<Int>
+	//#signal("matchmaking_status_updated", arguments: ["status": Int.self])
 	/// Called when `InviteStatus` is updated
-	#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
+	@Signal var inviteStatusUpdated: SignalWithArguments<Int, String>
+	//#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
 	/// Called when host changes
-	#signal("host_changed", arguments: ["original_id": Int.self, "new_id": Int.self])
+	@Signal var hostChanged: SignalWithArguments<Int, Int>
+	//#signal("host_changed", arguments: ["original_id": Int.self, "new_id": Int.self])
 
 	struct Packet {
 		var data: [UInt8]
@@ -71,7 +75,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var incomingPackets: [Packet] = []
 	var currentPacket: Packet?
 
-	var peerMap: [String: PeerData] = [:]  // Maps gamePlayerID to PeerData
+	var peerMap: [String: PeerData] = [:] // Maps gamePlayerID to PeerData
 	var hostOriginalID: Int32?
 	var match: GKMatch?
 	var isMatching: Bool = false
@@ -123,7 +127,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				request.recipientResponseHandler = invitationResponseHandler
 			} catch {
 				GD.pushError("[GameCenterPeer] Could not find player. Error: \(error)")
-				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.notFound.rawValue, "")
+				self.inviteStatusUpdated.emit(InviteStatus.notFound.rawValue, "")
 				return
 			}
 
@@ -132,7 +136,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				match?.delegate = self.delegate
 			} catch {
 				GD.pushError("[GameCenterPeer] Failed to invite player. Error: \(error)")
-				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.timeout.rawValue, "")
+				self.inviteStatusUpdated.emit(InviteStatus.timeout.rawValue, "")
 				return
 			}
 		}
@@ -149,7 +153,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				}
 			} catch {
 				GD.pushError("[GameCenterPeer] Could not find player. Error: \(error)")
-				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.notFound.rawValue, "")
+				self.inviteStatusUpdated.emit(InviteStatus.notFound.rawValue, "")
 				return
 			}
 		}
@@ -195,7 +199,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 					GameCenter.instance?.removeInvite(withIndex: inviteIndex)
 				} catch {
 					GD.pushError("[GameCenterPeer] Unable to join game: \(error)")
-					emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.timeout.rawValue, "")
+					self.inviteStatusUpdated.emit(InviteStatus.timeout.rawValue, "")
 
 					// NOTE: Removing the invite here will prevent retrying it, which might not be ideal
 					GameCenter.instance?.removeInvite(withIndex: inviteIndex)
@@ -203,7 +207,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				}
 			} else {
 				GD.pushError("[GameCenterPeer] Unable to join game: No invite at index \(inviteIndex)")
-				emit(signal: GameCenterMultiplayerPeer.inviteStatusUpdated, InviteStatus.invalid.rawValue, "")
+				self.inviteStatusUpdated.emit(InviteStatus.invalid.rawValue, "")
 				return
 			}
 		}
@@ -250,10 +254,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 			} catch {
 				// TODO: Handle all types of errors here, like Code 13: Matchmaking already in progress
 				GD.pushError("[GameCenterPeer] Unable to find players: \(error)")
-				emit(
-					signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
-					MatchmakingStatus.timeout.rawValue
-				)
+				self.matchmakingStatusUpdated.emit(MatchmakingStatus.timeout.rawValue)
 				return
 			}
 
@@ -262,10 +263,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				GKMatchmaker.shared().finishMatchmaking(for: match!)
 			}
 
-			emit(
-				signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
-				MatchmakingStatus.successful.rawValue
-			)
+			self.matchmakingStatusUpdated.emit(MatchmakingStatus.successful.rawValue)
 		}
 	}
 
@@ -489,7 +487,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (id: \(getPeerID(for: host)) -> \(HOST_ID))")
 		hostOriginalID = getPeerID(for: host)
 
-		emit(signal: GameCenterMultiplayerPeer.hostChanged, Int(hostOriginalID ?? 0), Int(HOST_ID))
+		self.hostChanged.emit(Int(hostOriginalID ?? 0), Int(HOST_ID))
 		setPeerID(for: host, id: HOST_ID)
 
 		if host == GKLocalPlayer.local {
@@ -512,17 +510,14 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 			// Because connected_to_server never triggers on servers (uniqueID == HOST_ID),
 			// we need to let the host known that the connection is ready
 			if uniqueID == HOST_ID {
-				emit(signal: GameCenterMultiplayerPeer.serverCreated)
+				self.serverCreated.emit()
 			}
 		} else {
 			GD.pushError("[GameCenterPeer] Failed to finalize match")
 			connectionStatus = .disconnected
 			close()
 
-			emit(
-				signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated,
-				MatchmakingStatus.failed.rawValue
-			)
+			self.matchmakingStatusUpdated.emit(MatchmakingStatus.failed.rawValue)
 		}
 
 		if let players = match?.players {

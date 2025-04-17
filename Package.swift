@@ -1,16 +1,17 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.0
 
 import PackageDescription
 
 var swiftSettings: [SwiftSetting] = [
-	.unsafeFlags(["-suppress-warnings"])
+	.unsafeFlags(["-suppress-warnings"]),
+	.swiftLanguageMode(.v5),
 ]
 
 let package = Package(
 	name: "iOS Plugins",
 	platforms: [
-		.iOS(.v15),
-		.macOS(.v13),
+		.iOS(.v17),
+		.macOS(.v14),
 	],
 
 	// MARK: Products

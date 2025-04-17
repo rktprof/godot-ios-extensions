@@ -186,7 +186,7 @@ extension GameCenter {
 					)
 
 					// Add the local player
-					var localPlayer: Variant = Variant()
+					var localPlayer: Variant? = nil
 					if let local: GKLeaderboard.Entry {
 						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
@@ -201,8 +201,8 @@ extension GameCenter {
 				} else {
 					onComplete.callDeferred(
 						Variant(LeaderboardError.failedToLoadEntries.rawValue),
-						Variant(),
-						Variant(),
+						nil,
+						nil,
 						Variant(0)
 					)
 				}
@@ -210,8 +210,8 @@ extension GameCenter {
 				GD.pushError("Failed to get leaderboard: \(error)")
 				onComplete.callDeferred(
 					Variant(LeaderboardError.failedToLoadEntries.rawValue),
-					Variant(),
-					Variant(),
+					nil,
+					nil,
 					Variant(0)
 				)
 			}
@@ -234,7 +234,7 @@ extension GameCenter {
 					)
 
 					// Add the local player
-					var localPlayer = Variant()
+					var localPlayer: Variant? = nil
 					if let local: GKLeaderboard.Entry {
 						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
@@ -253,16 +253,16 @@ extension GameCenter {
 				} else {
 					onComplete.callDeferred(
 						Variant(LeaderboardError.failedToLoadEntries.rawValue),
-						Variant(),
-						Variant()
+						nil,
+						nil
 					)
 				}
 			} catch {
 				GD.pushError("Failed to get leaderboard: \(error)")
 				onComplete.callDeferred(
 					Variant(LeaderboardError.failedToLoadEntries.rawValue),
-					Variant(),
-					Variant()
+					nil,
+					nil
 				)
 			}
 		}
@@ -286,7 +286,7 @@ extension GameCenter {
 					)
 
 					// Add the local player
-					var localPlayer: Variant = Variant()
+					var localPlayer: Variant? = nil
 					if let local: GKLeaderboard.Entry {
 						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
@@ -301,8 +301,8 @@ extension GameCenter {
 				} else {
 					onComplete.callDeferred(
 						Variant(LeaderboardError.failedToLoadEntries.rawValue),
-						Variant(),
-						Variant(),
+						nil,
+						nil,
 						Variant(0)
 					)
 				}
@@ -310,8 +310,8 @@ extension GameCenter {
 				GD.pushError("Failed to get leaderboard: \(error)")
 				onComplete.callDeferred(
 					Variant(LeaderboardError.failedToLoadEntries.rawValue),
-					Variant(),
-					Variant(),
+					nil,
+					nil,
 					Variant(0)
 				)
 			}
@@ -334,7 +334,7 @@ extension GameCenter {
 					)
 
 					// Add the local player
-					var localPlayer = Variant()
+					var localPlayer: Variant? = nil
 					if let local: GKLeaderboard.Entry {
 						localPlayer = Variant(GameCenterLeaderboardEntry(entry: local))
 					}
@@ -353,16 +353,16 @@ extension GameCenter {
 				} else {
 					onComplete.callDeferred(
 						Variant(LeaderboardError.failedToLoadEntries.rawValue),
-						Variant(),
-						Variant()
+						nil,
+						nil
 					)
 				}
 			} catch {
 				GD.pushError("Failed to get leaderboard: \(error)")
 				onComplete.callDeferred(
 					Variant(LeaderboardError.failedToLoadEntries.rawValue),
-					Variant(),
-					Variant()
+					nil,
+					nil
 				)
 			}
 		}

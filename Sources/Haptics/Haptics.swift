@@ -22,7 +22,7 @@ let HAPTIC_STOP_REASON_UNKNOWN_ERROR: Int = 7
 class Haptics: RefCounted {
 
 	/// Called when the Haptic engine stops
-	#signal("engine_stopped", arguments: ["reason": Int.self])
+	@Signal var engineStopped: SignalWithArguments<Int>
 
 	var isHapticsSupported: Bool = false
 	var engine: CHHapticEngine!
@@ -137,38 +137,35 @@ class Haptics: RefCounted {
 		switch reason {
 		case .audioSessionInterrupt:
 			GD.print("Haptic engine stopped because the audio session was interrupted")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_AUDIO_INTERRUPTED))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_AUDIO_INTERRUPTED)
 		case .applicationSuspended:
 			GD.print("Haptic engine stopped because the application was suspended")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_APPLICATION_SUSPENDED))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_APPLICATION_SUSPENDED)
 		case .idleTimeout:
 			GD.print("Haptic engine stopped because idle timeout")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_IDLE_TIMEOUT))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_IDLE_TIMEOUT)
 		case .systemError:
 			GD.print("Haptic engine stopped because of system error")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_SYSTEM_ERROR))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_SYSTEM_ERROR)
 		case .engineDestroyed:
 			GD.print("Haptic engine stopped because the engine was destroyed")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_ENGINE_DESTROYED))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_ENGINE_DESTROYED)
 		case .gameControllerDisconnect:
 			GD.print("Haptic engine stopped because the game controller was disconnected")
-			emit(
-				signal: Haptics.engineStopped,
-				Int(HAPTIC_STOP_REASON_GAME_CONTROLLER_DISCONNECTED)
-			)
+			self.engineStopped.emit(HAPTIC_STOP_REASON_GAME_CONTROLLER_DISCONNECTED)
 		default:
 			GD.print("Haptic engine stopped because of unknown error: \(reason)")
-			emit(signal: Haptics.engineStopped, Int(HAPTIC_STOP_REASON_UNKNOWN_ERROR))
+			self.engineStopped.emit(HAPTIC_STOP_REASON_UNKNOWN_ERROR)
 		}
 	}
 
 	func resetHandler() {
 		GD.print("Restarting haptic engine")
 		do {
-			try self.engine.start()
+			try engine.start()
 		} catch {
 			GD.pushError("Failed to restart haptic engine: \(error)")
 		}
 	}
 }
-#endif  // CoreHaptics
+#endif // CoreHaptics

@@ -31,7 +31,7 @@ extension GameCenter {
 				onComplete.callDeferred(Variant(OK), Variant(result))
 			} catch {
 				GD.pushError("Error loading challenges: \(error)")
-				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallenges.rawValue), Variant())
+				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallenges.rawValue), nil)
 			}
 		}
 	}
@@ -54,7 +54,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Error loading challengable friends: \(error)")
-				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallengableFriend.rawValue), Variant())
+				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallengableFriend.rawValue), nil)
 			}
 		}
 	}
@@ -113,7 +113,7 @@ extension GameCenter {
 							self.viewController.getRootController()?.present(challengeComposer, animated: true)
 						}
 						#else
-						onComplete.callDeferred(Variant(OK), Variant())
+						onComplete.callDeferred(Variant(OK), nil)
 						#endif
 					}
 				}
@@ -121,7 +121,7 @@ extension GameCenter {
 				GD.pushError("Error issuing challenge: \(error)")
 				onComplete.callDeferred(
 					Variant(ChallengeError.failedToLoadChallengableFriend.rawValue),
-					Variant()
+					nil
 				)
 			}
 		}
@@ -149,7 +149,7 @@ extension GameCenter {
 				onComplete.callDeferred(Variant(OK))
 			} catch {
 				GD.pushError("Error loading challenges: \(error)")
-				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallenges.rawValue), Variant())
+				onComplete.callDeferred(Variant(ChallengeError.failedToLoadChallenges.rawValue), nil)
 			}
 		}
 	}
@@ -175,8 +175,7 @@ extension GameCenter {
 	func player(_ player: GKPlayer, didReceive challenge: GKChallenge) {
 		if let issuingPlayer = challenge.issuingPlayer {
 			// You recieved a challenge from issuingPlayer
-			emit(
-				signal: GameCenter.challengeReceived,
+			self.challengeReceived.emit(
 				GameCenterChallenge.parseChallenge(challenge),
 				GameCenterPlayer(issuingPlayer)
 			)
@@ -191,15 +190,13 @@ extension GameCenter {
 		if let issuingPlayer = challenge.issuingPlayer {
 			if issuingPlayer == player {
 				// Your challenge was completed by friendPlayer
-				emit(
-					signal: GameCenter.issuedChallengeCompleted,
+				self.issuedChallengeCompleted.emit(
 					GameCenterChallenge.parseChallenge(challenge),
 					GameCenterPlayer(friendPlayer)
 				)
 			} else {
 				// You completed challenge from issuingPlayer
-				emit(
-					signal: GameCenter.challengeCompleted,
+				self.challengeCompleted.emit(
 					GameCenterChallenge.parseChallenge(challenge),
 					GameCenterPlayer(issuingPlayer)
 				)
@@ -219,12 +216,6 @@ extension GameCenter {
 		byFriend friendPlayer: GKPlayer
 	) {
 		GD.print("[GameCenter] Your issued challenge was completed by: \(friendPlayer.displayName))")
-
-		// emit(
-		// 	signal: GameCenter.issuedChallengeCompleted,
-		// 	GameCenterChallenge.parseChallenge(challenge),
-		// 	GameCenterPlayer(friendPlayer)
-		// )
 	}
 
 	/// Handles when the local player issues a challenge and the other player accepts.
@@ -233,11 +224,6 @@ extension GameCenter {
 		GD.print(
 			"[GameCenter] Your issued challenge was accepted (player: \(player.displayName), challenge: \(challenge))"
 		)
-		// emit(
-		// 	signal: GameCenter.issuedChallengeAccepted,
-		// 	GameCenterChallenge.parseChallenge(challenge),
-		// 	GameCenterPlayer(player)
-		// )
 	}
 
 	// MARK: ChallengeDelegate

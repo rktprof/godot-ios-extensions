@@ -93,7 +93,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Failed to get achievement: \(error)")
-				onComplete.callDeferred(Variant(AchievementError.failedToLoadAchievement.rawValue), Variant())
+				onComplete.callDeferred(Variant(AchievementError.failedToLoadAchievement.rawValue), nil)
 			}
 		}
 	}
@@ -118,7 +118,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Failed to get achievement description: \(error)")
-				onComplete.callDeferred(Variant(AchievementError.failedToLoadAchievement.rawValue), Variant())
+				onComplete.callDeferred(Variant(AchievementError.failedToLoadAchievement.rawValue), nil)
 			}
 		}
 	}
@@ -167,7 +167,7 @@ extension GameCenter {
 				GD.pushError("Failed to get achievements: \(error)")
 				onComplete.callDeferred(
 					Variant(AchievementError.failedToLoadAchievementDescription.rawValue),
-					Variant()
+					nil
 				)
 			}
 		}

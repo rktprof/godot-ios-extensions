@@ -31,7 +31,7 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 			GD.pushError("[GameCenterPeer] Match failed with unknown error")
 		}
 
-		emit(signal: GameCenterMultiplayerPeer.matchmakingStatusUpdated, MatchmakingStatus.failed.rawValue)
+		self.matchmakingStatusUpdated.emit(MatchmakingStatus.failed.rawValue)
 	}
 
 	func match(_ match: GKMatch, shouldReinviteDisconnectedPlayer player: GKPlayer) -> Bool {
@@ -65,11 +65,7 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 					GD.pushError(
 						"[GameCenterPeer] ERROR: Got data from unknown peer, peerData might have gotten lost. Closing connection"
 					)
-					emit(
-						signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-						InviteStatus.handshakeFailed.rawValue,
-						player.displayName
-					)
+					self.inviteStatusUpdated.emit(InviteStatus.handshakeFailed.rawValue, player.displayName)
 					shouldReinvite = true
 					disconnect()
 				}
@@ -97,41 +93,17 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 	func invitationResponseHandler(player: GKPlayer, response: GKInviteRecipientResponse) {
 		switch response {
 		case .accepted:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.accepted.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.accepted.rawValue, player.displayName)
 		case .declined:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.declined.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.declined.rawValue, player.displayName)
 		case .failed:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.failed.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.failed.rawValue, player.displayName)
 		case .incompatible:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.incompatible.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.incompatible.rawValue, player.displayName)
 		case .unableToConnect:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.unableToConnect.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.unableToConnect.rawValue, player.displayName)
 		case .noAnswer:
-			emit(
-				signal: GameCenterMultiplayerPeer.inviteStatusUpdated,
-				InviteStatus.timeout.rawValue,
-				player.displayName
-			)
+			self.inviteStatusUpdated.emit(InviteStatus.timeout.rawValue, player.displayName)
 		}
 	}
 

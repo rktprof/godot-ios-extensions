@@ -65,7 +65,7 @@ Fortunately, this pattern works for most of your interaction with the plugins.
 
 **IMPORTANT NOTE:** Remember that you need to specify the correct number of arguments or Godot will just fail silently, this is why callbacks from swift has to look like this:
 ```swift
-onComplete.callDeferred(Variant(LeaderboardError.failedToLoadEntries.rawValue), Variant(), Variant(), Variant(0))
+onComplete.callDeferred(Variant(LeaderboardError.failedToLoadEntries.rawValue), nil, nil, Variant(0))
 ```
 
 ## Currently supports:

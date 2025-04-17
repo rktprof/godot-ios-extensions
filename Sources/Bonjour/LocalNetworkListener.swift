@@ -3,6 +3,21 @@ import SwiftGodot
 
 @Godot
 class LocalNetworkListener: RefCounted {
+	/// Signal that triggers when the local network permission is known
+	/// NOTE: Does NOT work the same as for the browser, use the NetworkMonitor instead
+	@Signal var permissionDenied: SimpleSignal
+
+	@Signal var endpointAdded: SignalWithArguments<String, Int, Int>
+	@Signal var endpointRemoved: SignalWithArguments<String, Int, Int>
+
+	enum InterfaceType: Int {
+		case wifi = 0
+		case cellular = 1
+		case wiredEthernet = 2
+		case loopback = 3
+		case other = 4
+	}
+
 	static let DEFAULT_PORT: Int = 64201
 	var listener: NWListener? = nil
 
@@ -24,8 +39,8 @@ class LocalNetworkListener: RefCounted {
 			let listener: NWListener = try NWListener(using: .tcp, on: broadcast_port!)
 			listener.service = .init(name: name, type: typeDescriptor, txtRecord: NWTXTRecord(["port": String(port)]))
 
-			listener.stateUpdateHandler = self.stateChanged(to:)
-			listener.newConnectionHandler = self.newConnection(connection:)
+			listener.stateUpdateHandler = self.stateChanged
+			listener.newConnectionHandler = self.newConnection
 			listener.serviceRegistrationUpdateHandler = self.serviceRegistrationChange
 
 			listener.start(queue: DispatchQueue.global(qos: .userInitiated))
@@ -40,33 +55,56 @@ class LocalNetworkListener: RefCounted {
 	@Callable
 	func stop() {
 		listener?.cancel()
-		listener?.stateUpdateHandler = nil
-		listener?.newConnectionHandler = nil
 	}
 
+	// MARK: Internal
+
 	func stateChanged(to newState: NWListener.State) {
+		// NOTE: The state is changed to ready even if there are no local network permissions
 		switch newState {
-		case .ready:
-			break
 		case .failed(let error):
 			GD.pushError("[Bonjour] Listener failed. Error: \(error)")
-			break
-		case .setup:
-			break
-		case .waiting(_):
-			break
-		case .cancelled:
+		case let .waiting(error):
+			// This does not seem to trigger, need a better solution
+			GD.pushError("[Bonjour] Listener waiting: \(error)")
+			self.permissionDenied.emit()
+		default:
 			break
 		}
 	}
 
 	func serviceRegistrationChange(change: NWListener.ServiceRegistrationChange) {
-		// switch change {
-		// case .add(let endpoint):
-		// 	GD.print("[Bonjour] Added endpoint: \(endpoint)")
-		// case .remove(let endpoint):
-		// 	GD.print("[Bonjour] Removed endpoint: \(endpoint)")
-		// }
+		switch change {
+		case .add(let endpoint):
+			if let interface = endpoint.interface {
+				var type: InterfaceType = .other
+				switch interface.type {
+				case .wifi: type = .wifi
+				case .cellular: type = .cellular
+				case .wiredEthernet: type = .wiredEthernet
+				case .loopback: type = .loopback
+				case .other: type = .other
+				}
+				self.endpointAdded.emit(interface.name, type.rawValue, interface.index)
+			} else {
+				self.endpointAdded.emit("unknown", InterfaceType.other.rawValue, 0)
+			}
+
+		case .remove(let endpoint):
+			if let interface = endpoint.interface {
+				var type: InterfaceType = .other
+				switch interface.type {
+				case .wifi: type = .wifi
+				case .cellular: type = .cellular
+				case .wiredEthernet: type = .wiredEthernet
+				case .loopback: type = .loopback
+				case .other: type = .other
+				}
+				self.endpointRemoved.emit(interface.name, type.rawValue, interface.index)
+			} else {
+				self.endpointRemoved.emit("unknown", InterfaceType.other.rawValue, 0)
+			}
+		}
 	}
 
 	func newConnection(connection: NWConnection) {

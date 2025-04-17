@@ -36,9 +36,9 @@ class InAppPurchase: RefCounted {
 	}
 
 	/// Called when a product is puchased
-	#signal("product_purchased", arguments: ["product_id": String.self])
+	@Signal var productPurchased: SignalWithArguments<String>
 	/// Called when a purchase is revoked
-	#signal("product_revoked", arguments: ["product_id": String.self])
+	@Signal var productRevoked: SignalWithArguments<String>
 
 	private(set) var productIDs: [String] = []
 
@@ -122,14 +122,14 @@ class InAppPurchase: RefCounted {
 					GD.pushError("IAP Product doesn't exist: \(productID)")
 					onComplete.callDeferred(
 						Variant(InAppPurchaseError.noSuchProduct.rawValue),
-						Variant()
+						nil
 					)
 				}
 			} catch {
 				GD.pushError("IAP Failed to get products from App Store, error: \(error)")
 				onComplete.callDeferred(
 					Variant(InAppPurchaseError.purchaseFailed.rawValue),
-					Variant()
+					nil
 				)
 			}
 		}
@@ -184,7 +184,7 @@ class InAppPurchase: RefCounted {
 				GD.pushError("Failed to get products from App Store, error: \(error)")
 				onComplete.callDeferred(
 					Variant(InAppPurchaseError.failedToGetProducts.rawValue),
-					Variant()
+					nil
 				)
 			}
 		}
@@ -322,9 +322,9 @@ class InAppPurchase: RefCounted {
 				do {
 					let transaction: Transaction = try self.checkVerified(result)
 					if transaction.revocationDate == nil {
-						self.emit(signal: InAppPurchase.productPurchased, transaction.productID)
+						self.productPurchased.emit(transaction.productID)
 					} else {
-						self.emit(signal: InAppPurchase.productRevoked, transaction.productID)
+						self.productRevoked.emit(transaction.productID)
 					}
 
 					await self.updateProductStatus()

@@ -33,32 +33,22 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	}
 
 	/// Signal called when a challenge was received
-	#signal("challenge_received", arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self])
+	@Signal var challengeReceived: SignalWithArguments<GameCenterChallenge, GameCenterPlayer>
 
 	/// Signal called when you completed a challenge
-	#signal("challenge_completed", arguments: ["challenge": GameCenterChallenge.self, "from": GameCenterPlayer.self])
+	@Signal var challengeCompleted: SignalWithArguments<GameCenterChallenge, GameCenterPlayer>
 
 	/// Signal called when a challenge was completed
-	#signal(
-		"issued_challenge_completed",
-		arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
-	)
-
-	/// Signal called when a challenge was accepted
-	/// > NOTE: Accepting challenges does not seem to be a thing anymore
-	// #signal(
-	// 	"issued_challenge_accepted",
-	// 	arguments: ["challenge": GameCenterChallenge.self, "by": GameCenterPlayer.self]
-	// )
+	@Signal var issuedChallengeCompleted: SignalWithArguments<GameCenterChallenge, GameCenterPlayer>
 
 	/// Signal called when an invite is accepted
-	#signal("invite_accepted", arguments: ["from": String.self, "index": Int.self])
+	@Signal var inviteAccepted: SignalWithArguments<String, Int>
 
 	/// Signal called when an invite is removed
-	#signal("invite_removed", arguments: ["index": Int.self])
+	@Signal var inviteRemoved: SignalWithArguments<Int>
 
 	/// Signal called when an invite is send
-	#signal("invite_sent", arguments: ["to": GArray.self])
+	@Signal var inviteSent: SignalWithArguments<GArray>
 
 	#if canImport(UIKit)
 	var viewController: GameCenterViewController = GameCenterViewController()
@@ -112,7 +102,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
 				return
 			}
 
@@ -133,7 +123,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		GKLocalPlayer.local.authenticateHandler = { error in
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
 				return
 			}
 
@@ -159,7 +149,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), Variant())
+				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
 				return
 			}
 
@@ -196,7 +186,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
 	func getLocalPlayer(onComplete: Callable) {
 		guard GKLocalPlayer.local.isAuthenticated && self.player != nil else {
-			onComplete.call(Variant(GameCenterError.notAuthenticated.rawValue), Variant())
+			onComplete.call(Variant(GameCenterError.notAuthenticated.rawValue), nil)
 			return
 		}
 
@@ -214,7 +204,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 				onComplete.callDeferred(Variant(OK), Variant(image))
 			} catch {
 				GD.pushError("Failed to load profile picture. \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), nil)
 			}
 		}
 	}

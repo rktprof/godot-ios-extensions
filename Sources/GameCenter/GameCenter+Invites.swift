@@ -16,11 +16,11 @@ extension GameCenter {
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: GameCenterInvite)
 	func getInvite(withIndex index: Int, onComplete: Callable) {
 		guard let invites = self.invites else {
-			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), Variant())
+			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), nil)
 			return
 		}
 		guard index >= 0 || index < invites.count else {
-			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), Variant())
+			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), nil)
 			return
 		}
 
@@ -45,7 +45,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Error loading invites. \(error)")
-				onComplete.callDeferred(Variant(InviteError.failedToLoadInvites.rawValue), Variant())
+				onComplete.callDeferred(Variant(InviteError.failedToLoadInvites.rawValue), nil)
 			}
 		}
 	}
@@ -64,7 +64,7 @@ extension GameCenter {
 		}
 
 		invites.remove(at: index)
-		emit(signal: GameCenter.inviteRemoved, index)
+		self.inviteRemoved.emit(index)
 
 		return true
 	}
@@ -91,7 +91,7 @@ extension GameCenter {
 		}
 
 		self.invites!.append(invite)
-		emit(signal: GameCenter.inviteAccepted, invite.sender.displayName, Int(invites!.count - 1))
+		self.inviteAccepted.emit(invite.sender.displayName, Int(invites!.count - 1))
 	}
 
 	func player(_ player: GKPlayer, didRequestMatchWithRecipients recipientPlayers: [GKPlayer]) {
@@ -101,7 +101,7 @@ extension GameCenter {
 			players.append(Variant(GameCenterPlayer(recipient)))
 		}
 
-		emit(signal: GameCenter.inviteSent, players)
+		self.inviteSent.emit(players)
 	}
 
 	// MARK: InviteDelegate

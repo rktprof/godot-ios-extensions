@@ -17,7 +17,7 @@ import UIKit
 class Settings: RefCounted {
 
 	/// Signal called when an invite is send
-	#signal("value_changed", arguments: ["id": String.self])
+	@Signal var valueChanged: SignalWithArguments<String>
 
 	let settings: UserDefaults!
 	var subscriptions = Set<NSKeyValueObservation>()
@@ -91,10 +91,10 @@ class Settings: RefCounted {
 	// MARK: General
 
 	@Callable
-	func getValue(id: String) -> Variant {
+	func getValue(id: String) -> Variant? {
 		guard let value = settings.value(forKey: id) else {
 			GD.pushWarning("Unknown id: \(id)")
-			return Variant()
+			return nil
 		}
 
 		switch value {
@@ -104,7 +104,7 @@ class Settings: RefCounted {
 		case is Bool: return Variant(value as! Bool)
 		default:
 			GD.pushWarning("Unhandled value: \(value) for \(id)")
-			return Variant()
+			return nil
 		}
 	}
 
@@ -139,13 +139,13 @@ class Settings: RefCounted {
 				// TODO: Figure out how to include the new value.
 				// switch new {
 				// case is Int:
-				// 	emit(signal: Settings.valueChanged, key, Variant(Int(new)))
+				// 	valueChanged.emit(key, Variant(Int(new)))
 				// case is Float:
-				// 	emit(signal: Settings.valueChanged, key, Variant(Float(new))
+				// 	valueChanged.emit(key, Variant(Float(new))
 				// case is String:
-				// 	emit(signal: Settings.valueChanged, key, Variant(String(new))
+				// 	valueChanged.emit(key, Variant(String(new))
 				// case is Bool:
-				// 	emit(signal: Settings.valueChanged, key, Variant(Bool(new))
+				// 	valueChanged.emit(key, Variant(Bool(new))
 				// default: GD.pushWarning("Unhandled value changed: \(new)")
 				// }
 			}
@@ -153,7 +153,7 @@ class Settings: RefCounted {
 	}
 
 	func valueChanged(key: String) {
-		emit(signal: Settings.valueChanged, key)
+		valueChanged.emit(key)
 	}
 }
 #endif

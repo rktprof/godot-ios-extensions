@@ -34,7 +34,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Error loading friends. \(error)")
-				onComplete.callDeferred(Variant(FriendsError.failedToLoadFriends.rawValue), Variant())
+				onComplete.callDeferred(Variant(FriendsError.failedToLoadFriends.rawValue), nil)
 			}
 		}
 	}
@@ -62,7 +62,7 @@ extension GameCenter {
 
 			} catch {
 				GD.pushError("Error loading recent players. \(error)")
-				onComplete.callDeferred(Variant(FriendsError.failedToLoadRecentPlayers.rawValue), Variant())
+				onComplete.callDeferred(Variant(FriendsError.failedToLoadRecentPlayers.rawValue), nil)
 			}
 		}
 	}
@@ -88,11 +88,11 @@ extension GameCenter {
 					onComplete.callDeferred(Variant(OK), Variant(image))
 				} else {
 					GD.pushError("Found no friend with id: \(gamePlayerID)")
-					onComplete.callDeferred(Variant(FriendsError.noSuchFriend.rawValue), Variant())
+					onComplete.callDeferred(Variant(FriendsError.noSuchFriend.rawValue), nil)
 				}
 			} catch {
 				GD.pushError("Failed to load friend picture. \(error)")
-				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), Variant())
+				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), nil)
 			}
 		}
 	}
@@ -121,7 +121,7 @@ extension GameCenter {
 				onComplete.callDeferred(Variant(OK), Variant(status.rawValue))
 			} catch {
 				GD.pushError("Error accessing friends: \(error).")
-				onComplete.callDeferred(Variant(FriendsError.friendAccessRestricted.rawValue), Variant())
+				onComplete.callDeferred(Variant(FriendsError.friendAccessRestricted.rawValue), nil)
 			}
 		}
 	}
