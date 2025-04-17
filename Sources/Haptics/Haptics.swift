@@ -57,6 +57,15 @@ class Haptics: RefCounted {
 
 	// MARK: Godot functions
 
+	@Callable
+	func restartEngine() {
+		do {
+			try engine?.start()
+		} catch {
+			GD.pushError("Failed to restart haptics engine: \(error)")
+		}
+	}
+
 	/// Play a single tap.
 	///
 	/// - Parameters:
