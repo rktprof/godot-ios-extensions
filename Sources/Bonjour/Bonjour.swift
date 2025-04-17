@@ -5,5 +5,6 @@ import SwiftGodot
 	types: [
 		LocalNetworkListener.self,
 		LocalNetworkDiscovery.self,
+		NetworkMonitor.self,
 	]
 )
