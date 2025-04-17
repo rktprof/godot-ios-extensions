@@ -145,6 +145,8 @@ class LocalNetworkDiscovery: RefCounted {
 			GD.pushError("[Bonjour] LocalNetworkDiscovery failed: \(error)")
 		case let .waiting(error):
 			self.permissionDenied.emit()
+		case .cancelled:
+			self.browser = nil
 		default:
 			break
 		}

@@ -54,7 +54,7 @@ class LocalNetworkListener: RefCounted {
 	/// Stop listening for incoming network connections.
 	@Callable
 	func stop() {
-		listener?.cancel()
+		self.listener?.cancel()
 	}
 
 	// MARK: Internal
@@ -68,6 +68,8 @@ class LocalNetworkListener: RefCounted {
 			// This does not seem to trigger, need a better solution
 			GD.pushError("[Bonjour] Listener waiting: \(error)")
 			self.permissionDenied.emit()
+		case .cancelled:
+			self.listener = nil
 		default:
 			break
 		}
