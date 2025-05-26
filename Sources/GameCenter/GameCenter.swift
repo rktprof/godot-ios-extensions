@@ -48,7 +48,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	@Signal var inviteRemoved: SignalWithArguments<Int>
 
 	/// Signal called when an invite is send
-	@Signal var inviteSent: SignalWithArguments<GArray>
+	@Signal var inviteSent: SignalWithArguments<VariantArray>
 
 	#if canImport(UIKit)
 	var viewController: GameCenterViewController = GameCenterViewController()
@@ -85,7 +85,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	///
 	/// - Parameters:
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
-	@Callable
+	@Callable(autoSnakeCase: true)
 	public func authenticate(onComplete: Callable = Callable()) {
 		if GKLocalPlayer.local.isAuthenticated && self.player != nil {
 			onComplete.call(Variant(OK), Variant(self.player!))
@@ -246,7 +246,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		GKAccessPoint.shared.isActive = false
 	}
 
-	// MARK: Godot callables
+	// MARK: > Godot callables
 	// Because @Callable doesn't work in extensions
 
 	// General

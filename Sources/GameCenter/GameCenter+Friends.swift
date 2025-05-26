@@ -18,7 +18,7 @@ extension GameCenter {
 	func loadFriends(onComplete: Callable, includeImages: Bool = true) {
 		Task {
 			do {
-				var players = GArray()
+				var players = VariantArray()
 				self.friends = try await GKLocalPlayer.local.loadFriends()
 
 				for friend in self.friends ?? [] {
@@ -47,7 +47,7 @@ extension GameCenter {
 	func loadRecentPlayers(onComplete: Callable, includeImages: Bool = true) {
 		Task {
 			do {
-				var players = GArray()
+				var players = VariantArray()
 				let recentPlayers = try await GKLocalPlayer.local.loadRecentPlayers()
 
 				for recentPlayer in recentPlayers {

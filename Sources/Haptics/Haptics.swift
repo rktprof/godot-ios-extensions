@@ -57,7 +57,7 @@ class Haptics: RefCounted {
 
 	// MARK: Godot functions
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func restartEngine() {
 		do {
 			try engine?.start()
@@ -71,7 +71,7 @@ class Haptics: RefCounted {
 	/// - Parameters:
 	/// 	- sharpness: The feel of the haptic event.
 	/// 	- intensity: The strength of the haptic event.
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func playTap(sharpness: Float, intensity: Float) {
 		if !isHapticsSupported {
 			return
@@ -103,7 +103,7 @@ class Haptics: RefCounted {
 	/// 	- sharpness: The feel of the haptic event.
 	/// 	- intensity: The strength of the haptic event.
 	/// 	- duration: The duration of the haptic event.
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func playEvent(sharpness: Float, intensity: Float, duration: Float) {
 		if !isHapticsSupported {
 			return
@@ -131,7 +131,7 @@ class Haptics: RefCounted {
 	}
 
 	/// - Returns: True if the device supports Haptics
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func supportsHaptics() -> Bool {
 		CHHapticEngine.capabilitiesForHardware().supportsHaptics
 	}
@@ -177,4 +177,4 @@ class Haptics: RefCounted {
 		}
 	}
 }
-#endif // CoreHaptics
+#endif  // CoreHaptics

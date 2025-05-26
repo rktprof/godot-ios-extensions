@@ -36,7 +36,7 @@ extension GameCenter {
 	func getInvites(onComplete: Callable) {
 		Task {
 			do {
-				var invites = GArray()
+				var invites = VariantArray()
 				for invite in self.invites ?? [] {
 					invites.append(Variant(GameCenterInvite(invite)))
 				}
@@ -96,7 +96,7 @@ extension GameCenter {
 
 	func player(_ player: GKPlayer, didRequestMatchWithRecipients recipientPlayers: [GKPlayer]) {
 		GD.print("[GameCenter] Invite sent to \(recipientPlayers)")
-		var players: GArray = GArray()
+		var players = VariantArray()
 		for recipient in recipientPlayers {
 			players.append(Variant(GameCenterPlayer(recipient)))
 		}

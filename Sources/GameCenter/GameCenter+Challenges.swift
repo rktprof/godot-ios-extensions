@@ -16,7 +16,7 @@ extension GameCenter {
 	func loadReceivedChallenges(onComplete: Callable) {
 		Task {
 			do {
-				var result = GArray()
+				var result = VariantArray()
 				let challenges = try await GKChallenge.loadReceivedChallenges()
 
 				for challenge in challenges {
@@ -43,7 +43,7 @@ extension GameCenter {
 	func loadChallengablePlayers(onComplete: Callable) {
 		Task {
 			do {
-				var players = GArray()
+				var players = VariantArray()
 				let friends = try await GKLocalPlayer.local.loadChallengableFriends()
 
 				for friend in friends {
@@ -101,7 +101,7 @@ extension GameCenter {
 								didIssueChallenge,
 								sentPlayers in
 
-								var players = GArray()
+								var players = VariantArray()
 								for player: String in sentPlayers ?? [] {
 									players.append(Variant(player))
 								}

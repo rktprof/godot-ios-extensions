@@ -42,16 +42,12 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	///
 	/// > NOTE: This has no parameters to be compatible with the built-in `connected_to_server` signal
 	@Signal var serverCreated: SimpleSignal
-	//#signal("server_created")
 	/// Called when the `MatchmakingStatus` changes
 	@Signal var matchmakingStatusUpdated: SignalWithArguments<Int>
-	//#signal("matchmaking_status_updated", arguments: ["status": Int.self])
 	/// Called when `InviteStatus` is updated
 	@Signal var inviteStatusUpdated: SignalWithArguments<Int, String>
-	//#signal("invite_status_updated", arguments: ["status": Int.self, "player": String.self])
 	/// Called when host changes
 	@Signal var hostChanged: SignalWithArguments<Int, Int>
-	//#signal("host_changed", arguments: ["original_id": Int.self, "new_id": Int.self])
 
 	struct Packet {
 		var data: [UInt8]
@@ -75,7 +71,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var incomingPackets: [Packet] = []
 	var currentPacket: Packet?
 
-	var peerMap: [String: PeerData] = [:] // Maps gamePlayerID to PeerData
+	var peerMap: [String: PeerData] = [:]  // Maps gamePlayerID to PeerData
 	var hostOriginalID: Int32?
 	var match: GKMatch?
 	var isMatching: Bool = false
@@ -99,7 +95,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	///
 	/// - Parameters:
 	/// 	- playerIDs: An array of playerIDs to invite
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func invitePlayers(playerIDs: [String]) {
 		Task {
 			if isMatching {
@@ -143,7 +139,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	}
 
 	/// Cancel a pending invite to a specific player
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func cancelInvite(to playerID: String) {
 		Task {
 			do {
@@ -160,7 +156,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	}
 
 	/// Cancel all pending invites
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func cancelInvites() {
 		GKMatchmaker.shared().cancel()
 	}
@@ -172,7 +168,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	///
 	/// - Parameters:
 	/// 	- inviteIndex: The index of the invite you wish to join.
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func joinGame(inviteIndex: Int) {
 		Task {
 			if isMatching {
@@ -220,7 +216,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	/// 	- maxPlayers: The maximum amount of players.
 	/// 	- playerGroup: A number identifying a subset of players invited to join a match. This number must match for players to find eachother
 	/// 	- playerAttributes: A mask that specifies the role that the local player would like to play in the game.
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func startMatchmaking(minPlayers: Int, maxPlayers: Int, playerGroup: Int, playerAttributes: Int) {
 		Task {
 			if isMatching {
@@ -268,7 +264,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	}
 
 	/// Cancel matchmaking
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func stopMatchmaking() {
 		isMatching = false
 		GKMatchmaker.shared().cancel()
@@ -281,7 +277,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	///
 	/// - Parameters:
 	/// 	- onComplete: Callback with parameter: (error: Variant, players: Variant) -> (error: Int, players: Int)
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getPlayerActivity(onComplete: Callable) {
 		Task {
 			// For some reason try await GKMatchmaker.shared().queryActivity() does not work, even though the docs say it should
@@ -303,7 +299,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	/// Get the current localPlayerID
 	///
 	/// - Returns: The local player ID, or 0 if nothing is found
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getLocalPlayerID() -> Int {
 		return Int(getPeerID(for: GKLocalPlayer.local) ?? 0)
 	}

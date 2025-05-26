@@ -7,7 +7,7 @@ let OK: Int = 0
 class LocalNetworkDiscovery: RefCounted {
 	/// Signal that triggers when a device is discovered
 	///
-	/// > NOTE: If you need the address of the device you can use `resolveEndpoint` with the hash_value
+	/// > NOTE: If you need the address of the device you can use `resolve_endpoint` with the hash_value
 	@Signal var deviceDiscovered: SignalWithArguments<String, Int, Int>
 	/// Signal that triggers when a device is lost
 	@Signal var deviceLost: SignalWithArguments<String, Int>
@@ -68,6 +68,7 @@ class LocalNetworkDiscovery: RefCounted {
 	/// - Parameters:
 	///		- hashValue: The hash value for the discovered bonjour service.
 	///		- onComplete: Callback with parameter: (error: Variant, address: Variant, port: Variant) -> (error: Int, address: String, port: Int)
+	@Callable(autoSnakeCase: true)
 	func resolveEndpoint(hashValue: Int, onComplete: Callable) {
 		DispatchQueue.main.async {
 			// This whole thing is unfortunately necessary since you can't resolve an endpoint to host:port
@@ -218,12 +219,5 @@ class LocalNetworkDiscovery: RefCounted {
 
 	func ipAddressToString(_ address: IPv4Address) -> String {
 		return String("\(address.rawValue[0]).\(address.rawValue[1]).\(address.rawValue[2]).\(address.rawValue[3])")
-	}
-
-	// MARK: Godot callables
-
-	@Callable
-	func resolve_endpoint(hashValue: Int, onComplete: Callable) {
-		resolveEndpoint(hashValue: hashValue, onComplete: onComplete)
 	}
 }

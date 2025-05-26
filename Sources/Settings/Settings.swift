@@ -38,59 +38,59 @@ class Settings: RefCounted {
 
 	// MARK: String
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getString(id: String) -> String {
 		guard let value = settings.string(forKey: id) else {
 			return ""
 		}
+
 		return value
-		//return settings.string(forKey: id)
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func setString(id: String, value: String) {
 		settings.set(value, forKey: id)
 	}
 
 	// MARK: Bool
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getBool(id: String) -> Bool {
 		return settings.bool(forKey: id)
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func setBool(id: String, value: Bool) {
 		settings.set(value, forKey: id)
 	}
 
 	// MARK: Integer
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getInt(id: String) -> Int {
 		return settings.integer(forKey: id)
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func setInt(id: String, value: Int) {
 		settings.set(value, forKey: id)
 	}
 
 	// MARK: Float
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getFloat(id: String) -> Float {
 		return settings.float(forKey: id)
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func setFloat(id: String, value: Float) {
 		settings.set(value, forKey: id)
 	}
 
 	// MARK: General
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getValue(id: String) -> Variant? {
 		guard let value = settings.value(forKey: id) else {
 			GD.pushWarning("Unknown id: \(id)")
@@ -108,9 +108,9 @@ class Settings: RefCounted {
 		}
 	}
 
-	@Callable
-	func getKeys() -> GArray {
-		var keys: GArray = GArray()
+	@Callable(autoSnakeCase: true)
+	func getKeys() -> VariantArray {
+		var keys = VariantArray()
 
 		for key in self.settings.dictionaryRepresentation().keys {
 			keys.append(Variant(key))
@@ -119,7 +119,7 @@ class Settings: RefCounted {
 		return keys
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func openAppSettings() {
 		#if canImport(UIKit)
 		if let appSettings = URL(string: UIApplication.openSettingsURLString) {
