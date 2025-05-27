@@ -16,7 +16,7 @@ import UIKit
 @Godot
 class Settings: RefCounted {
 
-	/// Signal called when an invite is send
+	/// Signal called when a value is changed. Theoretically..
 	@Signal var valueChanged: SignalWithArguments<String>
 
 	let settings: UserDefaults!
