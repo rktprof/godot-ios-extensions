@@ -71,7 +71,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var incomingPackets: [Packet] = []
 	var currentPacket: Packet?
 
-	var peerMap: [String: PeerData] = [:]  // Maps gamePlayerID to PeerData
+	var peerMap: [String: PeerData] = [:] // Maps gamePlayerID to PeerData
 	var hostOriginalID: Int32?
 	var match: GKMatch?
 	var isMatching: Bool = false
