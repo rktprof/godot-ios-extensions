@@ -22,16 +22,9 @@ class Settings: RefCounted {
 	let settings: UserDefaults!
 	var subscriptions = Set<NSKeyValueObservation>()
 
-	required init() {
+	required init(_ context: InitContext) {
 		self.settings = UserDefaults.standard
-		super.init()
-
-		observeChanges()
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		self.settings = UserDefaults.standard
-		super.init(nativeHandle: nativeHandle)
+		super.init(context)
 
 		observeChanges()
 	}

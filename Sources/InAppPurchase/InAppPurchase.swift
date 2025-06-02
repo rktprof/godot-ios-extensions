@@ -47,14 +47,9 @@ class InAppPurchase: RefCounted {
 
 	var updateListenerTask: Task<Void, Error>? = nil
 
-	required init() {
+	required init(_ context: InitContext) {
 		products = []
-		super.init()
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		products = []
-		super.init(nativeHandle: nativeHandle)
+		super.init(context)
 	}
 
 	deinit {

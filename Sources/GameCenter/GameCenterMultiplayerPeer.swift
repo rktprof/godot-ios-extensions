@@ -77,14 +77,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var isMatching: Bool = false
 	var shouldReinvite: Bool = false
 
-	required init() {
-		super.init()
-		connectionStatus = .connecting
-		delegate = MatchDelegate(withDelegate: self)
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		super.init(nativeHandle: nativeHandle)
+	required init(_ context: InitContext) {
+		super.init(context)
 		connectionStatus = .connecting
 		delegate = MatchDelegate(withDelegate: self)
 	}

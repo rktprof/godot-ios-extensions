@@ -27,13 +27,8 @@ class Haptics: RefCounted {
 	var isHapticsSupported: Bool = false
 	var engine: CHHapticEngine!
 
-	required init() {
-		super.init()
-		initializeEngine()
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		super.init(nativeHandle: nativeHandle)
+	required init(_ context:InitContext) {
+		super.init(context)
 		initializeEngine()
 	}
 

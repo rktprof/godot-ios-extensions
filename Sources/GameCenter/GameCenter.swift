@@ -65,15 +65,8 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	internal(set) var achievements: [GKAchievement]?
 	internal(set) var achievementDescriptions: [GKAchievementDescription]?
 
-	required init() {
-		super.init()
-		GameCenter.instance = self
-		inviteDelegate = InviteDelegate(withDelegate: self)
-		challengeDelegate = ChallengeDelegate(withDelegate: self)
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		super.init(nativeHandle: nativeHandle)
+	required init(_ context: InitContext) {
+		super.init(context)
 		GameCenter.instance = self
 		inviteDelegate = InviteDelegate(withDelegate: self)
 		challengeDelegate = ChallengeDelegate(withDelegate: self)
