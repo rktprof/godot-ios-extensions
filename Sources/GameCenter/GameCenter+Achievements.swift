@@ -134,7 +134,7 @@ extension GameCenter {
 					try await updateAchievements()
 				}
 
-				var result: GArray = GArray()
+				var result = VariantArray()
 				for entry: GKAchievement in self.achievements ?? [] {
 					var achievement: GameCenterAchievement = GameCenterAchievement(entry)
 					result.append(Variant(achievement))
@@ -156,7 +156,7 @@ extension GameCenter {
 					try await updateAchievementDescriptions()
 				}
 
-				var result: GArray = GArray()
+				var result = VariantArray()
 				for entry: GKAchievementDescription in self.achievementDescriptions ?? [] {
 					var achievement: GameCenterAchievementDescription = GameCenterAchievementDescription(entry)
 					result.append(Variant(achievement))

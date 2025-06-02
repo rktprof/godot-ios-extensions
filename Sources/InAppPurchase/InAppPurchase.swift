@@ -47,14 +47,9 @@ class InAppPurchase: RefCounted {
 
 	var updateListenerTask: Task<Void, Error>? = nil
 
-	required init() {
+	required init(_ context: InitContext) {
 		products = []
-		super.init()
-	}
-
-	required init(nativeHandle: UnsafeRawPointer) {
-		products = []
-		super.init(nativeHandle: nativeHandle)
+		super.init(context)
 	}
 
 	deinit {
@@ -141,7 +136,7 @@ class InAppPurchase: RefCounted {
 	/// 	- productID: The identifier of the product that you enter in App Store Connect.,
 	///
 	/// - Returns: True if a product is purchased
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func isPurchased(_ productID: String) -> Bool {
 		return purchasedProducts.contains(productID)
 	}
@@ -151,12 +146,12 @@ class InAppPurchase: RefCounted {
 	/// - Parameters:
 	/// 	- identifiers: An array of product identifiers that you enter in App Store Connect.
 	/// 	- onComplete: Callback with parameters: (error: Variant, products: Variant) -> (error: Int, products: [``IAPProduct``])
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getProducts(identifiers: [String], onComplete: Callable) {
 		Task {
 			do {
 				let storeProducts: [Product] = try await Product.products(for: identifiers)
-				var products: GArray = GArray()
+				var products = VariantArray()
 
 				for storeProduct: Product in storeProducts {
 					var product: IAPProduct = IAPProduct()
@@ -193,7 +188,7 @@ class InAppPurchase: RefCounted {
 	/// Restore purchases
 	///
 	/// - Parameter onComplete: Callback with parameter: (error: Variant) -> (error: Int)
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func restorePurchases(onComplete: Callable) {
 		Task {
 			do {
@@ -213,7 +208,7 @@ class InAppPurchase: RefCounted {
 	/// NOTE: On iOS 16 this might display a system prompt that asks users to authenticate
 	///
 	/// - Parameter onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: String)
-	@Callable
+	@Callable(autoSnakeCase: true)
 	public func getEnvironment(onComplete: Callable) {
 		if #available(iOS 16.0, *) {
 			Task {
@@ -255,7 +250,7 @@ class InAppPurchase: RefCounted {
 	/// Refresh the App Store signed app transaction (only iOS 16+)
 	///
 	/// NOTE: This will display a system prompt that asks users to authenticate
-	@Callable
+	@Callable(autoSnakeCase: true)
 	public func refreshAppTransaction(onComplete: Callable) {
 		if #available(iOS 16.0, *) {
 			Task {

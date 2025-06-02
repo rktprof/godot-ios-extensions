@@ -192,7 +192,7 @@ extension GameCenter {
 					}
 
 					// Get all the players in range
-					var players: GArray = GArray()
+					var players = VariantArray()
 					for entry: GKLeaderboard.Entry in entries {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
@@ -240,7 +240,7 @@ extension GameCenter {
 					}
 
 					// Get all the players in range
-					var players = GArray()
+					var players = VariantArray()
 					for entry in entries {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
@@ -292,7 +292,7 @@ extension GameCenter {
 					}
 
 					// Get all the players in range
-					var players = GArray()
+					var players = VariantArray()
 					for entry in entries {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}
@@ -340,7 +340,7 @@ extension GameCenter {
 					}
 
 					// Get all the players in range
-					var players = GArray()
+					var players = VariantArray()
 					for entry in entries {
 						players.append(Variant(GameCenterLeaderboardEntry(entry: entry)))
 					}

@@ -54,12 +54,12 @@ class NetworkMonitor: RefCounted {
 		monitor?.cancel()
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func getCurrentStatus() -> Int {
 		return connectionStatus.rawValue
 	}
 
-	@Callable
+	@Callable(autoSnakeCase: true)
 	func testLocalNetworkPermission(onComplete: Callable) {
 		// NOTE: This is not a great solution, but until NWListener reports status correctly it's the only way
 		// that I could think of.
