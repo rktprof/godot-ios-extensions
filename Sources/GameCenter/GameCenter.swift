@@ -97,8 +97,8 @@ class GameCenter: RefCounted, GKInviteEventListener {
 			}
 
 			guard GKLocalPlayer.local.isAuthenticated else {
-				// NOTE: Cancelling the GameCenter login does not call the authenticateHandler again
-				// on iOS 26, it might be a bug, it might not.
+				// NOTE: Cancelling the GameCenter login on iOS 26 does not call the authenticateHandler again
+				// it might be a bug, it might not, have not found a better way of handling it.
 				GD.pushError("User cancelled login")
 				onComplete.callDeferred(Variant(GameCenterError.userCancelled.rawValue), nil)
 				return
