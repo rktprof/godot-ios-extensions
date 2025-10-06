@@ -29,6 +29,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		case notAuthenticated = 2
 		case notAvailable = 3
 		case failedToAuthenticate = 4
+		case userCancelled = 5
 		case failedToLoadPicture = 8
 	}
 
@@ -80,15 +81,11 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: ``GameCenterPlayerLocal``)
 	@Callable(autoSnakeCase: true)
 	public func authenticate(onComplete: Callable = Callable()) {
-		if GKLocalPlayer.local.isAuthenticated && self.player != nil {
-			onComplete.call(Variant(OK), Variant(self.player!))
-			return
-		}
-
 		#if os(iOS)
 
-		GKLocalPlayer.local.authenticateHandler = { loginController, error in
+		GKLocalPlayer.local.authenticateHandler = { loginController, error in			
 			guard loginController == nil else {
+				GD.print("Showing login screen")
 				self.viewController.getRootController()?.present(loginController!, animated: true)
 				return
 			}
@@ -96,6 +93,14 @@ class GameCenter: RefCounted, GKInviteEventListener {
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
 				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
+				return
+			}
+
+			guard GKLocalPlayer.local.isAuthenticated else {
+				// NOTE: Cancelling the GameCenter login does not call the authenticateHandler again
+				// on iOS 26, it might be a bug, it might not.
+				GD.pushError("User cancelled login")
+				onComplete.callDeferred(Variant(GameCenterError.userCancelled.rawValue), nil)
 				return
 			}
 
@@ -117,6 +122,12 @@ class GameCenter: RefCounted, GKInviteEventListener {
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
 				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
+				return
+			}
+
+			guard GKLocalPlayer.local.isAuthenticated else {
+				GD.print("User cancelled login")
+				onComplete.callDeferred(Variant(GameCenterError.userCancelled.rawValue), nil)
 				return
 			}
 
@@ -143,6 +154,12 @@ class GameCenter: RefCounted, GKInviteEventListener {
 			guard error == nil else {
 				GD.pushError("Failed to authenticate \(error)")
 				onComplete.callDeferred(Variant(GameCenterError.failedToAuthenticate.rawValue), nil)
+				return
+			}
+
+			guard GKLocalPlayer.local.isAuthenticated else {
+				GD.print("User cancelled login")
+				onComplete.callDeferred(Variant(GameCenterError.userCancelled.rawValue), nil)
 				return
 			}
 
