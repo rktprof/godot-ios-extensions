@@ -82,41 +82,38 @@ extension GameCenter {
 				let receivers = friends.filter { receivers.contains($0.gamePlayerID) }
 
 				let leaderboards: [GKLeaderboard] = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
-				if let leaderboard: GKLeaderboard = try await leaderboards.first {
-					let (local, entries) = try await leaderboard.loadEntries(
-						for: [GKLocalPlayer.local],
-						timeScope: .today
-					)
+				let leaderboard: GKLeaderboard = try await leaderboards.first!
+				let (local, entries) = try await leaderboard.loadEntries(
+					for: [GKLocalPlayer.local],
+					timeScope: .today
+				)
 
-					if let local: GKLeaderboard.Entry {
-						#if canImport(UIKit)
-						DispatchQueue.main.async {
-							// NOTE: We're actually using the old deprecated version that returns sentPlayers
-							// as [String]? instead of the iOS 17+ [GKPlayer]? version for simplicity
-							let challengeComposer = local.challengeComposeController(
-								withMessage: message,
-								players: receivers
-							) {
-								composeController,
-								didIssueChallenge,
-								sentPlayers in
+				#if canImport(UIKit)
+				DispatchQueue.main.async {
+					// NOTE: We're actually using the old deprecated version that returns sentPlayers
+					// as [String]? instead of the iOS 17+ [GKPlayer]? version for simplicity
+					let challengeComposer = local!.challengeComposeController(
+						withMessage: message,
+						players: receivers
+					) {
+						composeController,
+						didIssueChallenge,
+						sentPlayers in
 
-								var players = VariantArray()
-								for player: String in sentPlayers ?? [] {
-									players.append(Variant(player))
-								}
-
-								composeController.dismiss(animated: true)
-								onComplete.callDeferred(Variant(OK), Variant(players))
-							}
-
-							self.viewController.getRootController()?.present(challengeComposer, animated: true)
+						var players = VariantArray()
+						for player: String in sentPlayers ?? [] {
+							players.append(Variant(player))
 						}
-						#else
-						onComplete.callDeferred(Variant(OK), nil)
-						#endif
+
+						composeController.dismiss(animated: true)
+						onComplete.callDeferred(Variant(OK), Variant(players))
 					}
+
+					self.viewController.getRootController()!.present(challengeComposer, animated: true)
 				}
+				#else
+				onComplete.callDeferred(Variant(OK), nil)
+				#endif
 			} catch {
 				GD.pushError("Error issuing challenge: \(error)")
 				onComplete.callDeferred(
