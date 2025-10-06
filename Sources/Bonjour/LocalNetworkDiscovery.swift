@@ -47,6 +47,7 @@ class LocalNetworkDiscovery: RefCounted {
 				domain: "local."
 			)
 			let browser: NWBrowser = NWBrowser(for: descriptor, using: .tcp)
+			
 			browser.stateUpdateHandler = self.stateChanged
 			browser.browseResultsChangedHandler = self.resultsChanged
 
@@ -211,6 +212,8 @@ class LocalNetworkDiscovery: RefCounted {
 					self.discoveredDevices.removeValue(forKey: old.hashValue)
 					self.discoveredDevices[new.hashValue] = new
 				case .identical:
+					break
+				default:
 					break
 				}
 			}
