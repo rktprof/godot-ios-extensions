@@ -15,16 +15,12 @@ extension GameCenter {
 	/// 	- index: The index in the internal list of invites
 	/// 	- onComplete: Callback with parameter: (error: Variant, data: Variant) -> (error: Int, data: GameCenterInvite)
 	func getInvite(withIndex index: Int, onComplete: Callable) {
-		guard let invites = self.invites else {
-			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), nil)
-			return
-		}
-		guard index >= 0 || index < invites.count else {
+		guard let invite = getInvite(withIndex:index) else {
 			onComplete.callDeferred(Variant(GameCenterError.notAvailable.rawValue), nil)
 			return
 		}
 
-		onComplete.callDeferred(Variant(OK), Variant(GameCenterInvite(invites[index])))
+		onComplete.callDeferred(Variant(OK), Variant(GameCenterInvite(invite, index:index)))
 	}
 
 	/// Get all the currently active invites.
@@ -36,10 +32,17 @@ extension GameCenter {
 	func getInvites(onComplete: Callable) {
 		Task {
 			do {
-				var invites = VariantArray()
-				for invite in self.invites ?? [] {
-					invites.append(Variant(GameCenterInvite(invite)))
+				GD.print("[GameCenter] Gettings invites...")
+
+				guard invites != nil else {
+					onComplete.callDeferred(Variant(OK), nil)
+					return
 				}
+
+				var invites = VariantArray()				
+				for index in 0..<self.invites!.count {
+					invites.append(Variant(GameCenterInvite(self.invites![index], index: index)))
+				} 
 
 				onComplete.callDeferred(Variant(OK), Variant(invites))
 
@@ -55,16 +58,12 @@ extension GameCenter {
 	/// - Parameters:
 	/// 	- index: The index in the internal list of invites
 	func removeInvite(withIndex index: Int) -> Bool {
-		guard var invites = self.invites else {
+		guard let invite = getInvite(withIndex: index) else {
 			return false
 		}
 
-		guard index >= 0 || index < invites.count else {
-			return false
-		}
-
-		invites.remove(at: index)
-		self.inviteRemoved.emit(index)
+		self.inviteRemoved.emit(GameCenterInvite(invite, index:index))
+		self.invites?.remove(at: index)
 
 		return true
 	}
@@ -77,6 +76,7 @@ extension GameCenter {
 		}
 
 		guard index >= 0 || index < invites.count else {
+			GD.print("[GameCenter] No invites found with index \(index)")
 			return nil
 		}
 
@@ -84,14 +84,14 @@ extension GameCenter {
 	}
 
 	func player(_ player: GKPlayer, didAccept invite: GKInvite) {
-		GD.print("[GameCenter] Invite accepted: \(invite)")
-
 		if self.invites == nil {
 			invites = []
 		}
-
+		let index:Int = invites!.count
 		self.invites!.append(invite)
-		self.inviteAccepted.emit(invite.sender.displayName, Int(invites!.count - 1))
+
+		GD.print("[GameCenter] Invite accepted: \(invite), index: \(index)")
+		self.inviteAccepted.emit(GameCenterInvite(invite, index: index))
 	}
 
 	func player(_ player: GKPlayer, didRequestMatchWithRecipients recipientPlayers: [GKPlayer]) {

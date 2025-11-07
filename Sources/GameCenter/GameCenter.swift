@@ -17,6 +17,7 @@ import UIKit
 		GameCenterChallenge.self,
 		GameCenterScoreChallenge.self,
 		GameCenterAchievementChallenge.self,
+		GameCenterInvite.self,
 	]
 )
 
@@ -43,10 +44,10 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	@Signal var issuedChallengeCompleted: SignalWithArguments<GameCenterChallenge, GameCenterPlayer>
 
 	/// Signal called when an invite is accepted
-	@Signal var inviteAccepted: SignalWithArguments<String, Int>
+	@Signal var inviteAccepted: SignalWithArguments<GameCenterInvite>
 
 	/// Signal called when an invite is removed
-	@Signal var inviteRemoved: SignalWithArguments<Int>
+	@Signal var inviteRemoved: SignalWithArguments<GameCenterInvite>
 
 	/// Signal called when an invite is send
 	@Signal var inviteSent: SignalWithArguments<VariantArray>
