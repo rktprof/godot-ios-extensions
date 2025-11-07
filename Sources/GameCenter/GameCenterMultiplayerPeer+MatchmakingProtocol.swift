@@ -11,16 +11,18 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 		case .connected:
 			// Send my peer data to player
 			if let localPeerData: PeerData = getPeerData(for: GKLocalPlayer.local) {
-				sendPeerData(localPeerData, to: [player], with: .reliable)
+				sendPeerData(localPeerData, to: [player])
+				validateHandshakes()
 			} else {
 				GD.pushError("[GameCenterPeer] Found no local peerData to send")
 			}
 
 		case .disconnected:
+			requiredHandshakes += 1			
 			removePlayer(player)
 
-		default:
-			GD.pushWarning("[GameCenterPeer] \(player.displayName) Connection Unknown \(state)")
+		case .unknown:
+			GD.pushWarning("[GameCenterPeer] \(player.displayName) Connection Unknown")
 		}
 	}
 
@@ -47,27 +49,55 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 	func match(_ match: GKMatch, didReceive data: Data, fromRemotePlayer player: GKPlayer) {
 		do {
 			let gameData = decode(dataPacket: data)
-
+			
 			if let peerData: PeerData = gameData?.peerData {
-				// Player sent peerData
-				//GD.print("<- RECEIVED\t peerData from \(player.displayName), id: \(peerData.id!)")
+				// Received peerData from player
+				guard !hasPeerData(for: player.gamePlayerID) else {
+					GD.pushWarning("[GameCenterPeer] Got duplicate peerData, ignoring")
+					return
+				}
+
+				//GD.print("<- RECEIVED\t peerData(\(data.count ?? 0) bytes) from \(player.displayName) (peerID: \(peerData.id!), mode: \(getTransferMode()))")
 				setPeerData(for: player, data: peerData)
 
-				if match.expectedPlayerCount == 0 {
+				requiredHandshakes -= 1
+				if requiredHandshakes == 0 {
+					setHandshakesComplete(for: GKLocalPlayer.local.gamePlayerID)
+				}
+				sendPingData(.handshakeCompleted(requiredHandshakes), to: [player])
+
+				if isHandshakesComplete() && self.hostOriginalID == nil {
 					decideHost()
 				}
+
 			} else if let data: [UInt8] = gameData?.bytes {
-				if let fromPeer: Int32 = getPeerID(for: player) {
-					//GD.print("<- RECEIVED\t gameData(\(data.count) bytes) from \(player.displayName) (id: \(fromPeer))")
-					let packet: Packet = Packet(data: data, from: fromPeer, channel: 0)
-					incomingPackets.append(packet)
-				} else {
-					GD.pushError(
-						"[GameCenterPeer] ERROR: Got data from unknown peer, peerData might have gotten lost. Closing connection"
-					)
+				guard let fromPeer = getPeerID(for: player) else {
+					GD.pushError("[GameCenterPeer] Got data (\(data.count ?? 0) bytes) from unknown peer, peerData might have gotten lost.")
 					self.inviteStatusUpdated.emit(InviteStatus.handshakeFailed.rawValue, player.displayName)
-					shouldReinvite = true
 					disconnect()
+					return
+				}
+
+				//GD.print("<- RECEIVED\t gameData(\(data.count ?? 0) bytes) from \(player.displayName) (peerID: \(fromPeer), mode: \(getTransferMode()))")
+				let packet: Packet = Packet(data: data, from: fromPeer, channel: 0)
+				incomingPackets.append(packet)
+
+			} else if let pingData = gameData?.ping {
+				switch pingData.type {
+				case .handshakeRequest:
+					if let localPeerData: PeerData = getPeerData(for: GKLocalPlayer.local) {
+						sendPeerData(localPeerData, to: [player])
+					} else {
+						GD.pushError("[GameCenterPeer] Found no local peerData to send")
+					}
+				case .handshakeCompleted(let remaining):
+					if remaining <= 0 {
+						setHandshakesComplete(for: player.gamePlayerID)
+					}
+
+					if remaining == 0 && requiredHandshakes == 0 {
+						decideHost()
+					}
 				}
 			} else {
 				GD.pushWarning("[GameCenterPeer] Got unhandled data packet")
@@ -111,7 +141,6 @@ extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 
 	// This class is just an intermediate because a @Godot class doesn't inherit from NSObject
 	// which is required for GKMatchDelegate and GKLocalPlayerListener
-	// TODO: Move GKLocalPlayerListener elsewhere
 	class MatchDelegate: NSObject, GKMatchDelegate {
 		var delegate: GameCenterMatchmakingProtocol
 

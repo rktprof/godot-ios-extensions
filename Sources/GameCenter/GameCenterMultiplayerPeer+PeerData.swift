@@ -4,6 +4,8 @@ import SwiftGodot
 struct PeerData: Codable {
 	var id: Int32?
 	var initiative: UInt32?
+
+	var handshakesComplete: Bool?
 }
 
 extension GameCenterMultiplayerPeer {
@@ -22,6 +24,10 @@ extension GameCenterMultiplayerPeer {
 
 	func getPeerData(for gamePlayerID: String) -> PeerData? {
 		return peerMap[gamePlayerID]
+	}
+
+	func hasPeerData(for gamePlayerID: String) -> Bool {
+		return peerMap[gamePlayerID] != nil
 	}
 
 	func getNameFor(for peerID: Int32) -> String {
@@ -88,6 +94,10 @@ extension GameCenterMultiplayerPeer {
 		return peerMap[gamePlayerID]?.initiative
 	}
 
+	func setHandshakesComplete(for gamePlayerID: String) {
+		peerMap[gamePlayerID]?.handshakesComplete = true
+	}
+
 	func getPlayerWithHighestInitiative() -> GKPlayer? {
 		var highestInitiative: UInt32 = 0
 		var playerID: String = ""
@@ -102,6 +112,16 @@ extension GameCenterMultiplayerPeer {
 		}
 
 		return getPlayerWithID(gamePlayerID: playerID)
+	}
+
+	func isHandshakesComplete() -> Bool {
+		for peer in peerMap.values {
+			if !(peer.handshakesComplete ?? false) {
+				return false
+			}
+		}
+
+		return true
 	}
 
 	func getPlayerWithID(gamePlayerID: String) -> GKPlayer? {

@@ -6,6 +6,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 
 	let HOST_ID: Int32 = 1
 	let RESERVED_CHANNELS: Int32 = 2
+	let MAX_HANDSHAKE_RETRIES: Int = 5
+	let HANDSHAKE_RETRY_INTERVAL: Int = 3
 
 	enum MultiplayerPeerError: Int, Error {
 		case unknownPeer = 1
@@ -34,7 +36,6 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 		case timeout = 5
 		case invalid = 6
 		case notFound = 7
-		/// Triggered when we receive data from an unkown peer, usually because peerData was dropped
 		case handshakeFailed = 8
 	}
 
@@ -61,9 +62,13 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var activeMode: Mode = .none
 	var uniqueID: Int32 = 0
 	var targetPeer: Int32 = 0
+	var hostOriginalID: Int32?
+
+	var requiredHandshakes: Int = -1
+	var handshakeRetries: Int = 0
 
 	var connectionStatus: MultiplayerPeer.ConnectionStatus = .disconnected
-
+	
 	var currentTransferMode: MultiplayerPeer.TransferMode = .reliable
 	var currentTransferChannel: Int32 = 0
 	var refuseConnections: Bool = false
@@ -72,7 +77,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	var currentPacket: Packet?
 
 	var peerMap: [String: PeerData] = [:] // Maps gamePlayerID to PeerData
-	var hostOriginalID: Int32?
+	
 	var match: GKMatch?
 	var isMatching: Bool = false
 	var shouldReinvite: Bool = false
@@ -124,6 +129,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 			do {
 				match = try await GKMatchmaker.shared().findMatch(for: request)
 				match?.delegate = self.delegate
+				requiredHandshakes = playerIDs.count
+
 			} catch {
 				GD.pushError("[GameCenterPeer] Failed to invite player. Error: \(error)")
 				self.inviteStatusUpdated.emit(InviteStatus.timeout.rawValue, "")
@@ -185,6 +192,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 					isMatching = true
 					match = try await GKMatchmaker.shared().match(for: invite)
 					match?.delegate = self.delegate
+					requiredHandshakes = match?.expectedPlayerCount ?? 2
 
 					GameCenter.instance?.removeInvite(withIndex: inviteIndex)
 				} catch {
@@ -238,6 +246,9 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 				isMatching = true
 				match = try await GKMatchmaker.shared().findMatch(for: request)
 				match?.delegate = self.delegate
+				requiredHandshakes = match?.expectedPlayerCount ?? minPlayers
+				GD.print("[GameCenterPeer] Matchmaking, required handshakes \(requiredHandshakes)")
+
 			} catch GKError.cancelled {
 				// Handling user cancelled separately here because trying to emit a signal here causes a crash
 				return
@@ -330,7 +341,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 		if let currentMatch = match {
 			do {
 				let data = encode(packedByteArray: pBuffer)
-				//GD.print("-> SENDING\t gameData(\(data!.count ?? -1) bytes) to \(getNameFor(for: targetPeer)) (id: \(targetPeer)), \(getTransferMode())")
+				//GD.print("-> SENDING\t gameData(\(data!.count ?? 0) bytes) to \(getNameFor(for: targetPeer)) (peerID: \(targetPeer), mode: \(getTransferMode()))")
 				if activeMode == .server {
 					if targetPeer == 0 {
 						// Send to all players
@@ -461,6 +472,7 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	func decideHost() {
 		Task {
 			if let currentMatch = match {
+				GD.print("[GameCenterPeer] Determining the best host")
 				if let player = await currentMatch.chooseBestHostingPlayer() {
 					// We got a new host
 					self.setHost(player)
@@ -474,9 +486,9 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 	}
 
 	func setHost(_ host: GKPlayer) {
-		//GD.print("[GameCenterPeer] Making \(host.displayName) the host (id: \(getPeerID(for: host)) -> \(HOST_ID))")
+		GD.print("[GameCenterPeer] Making \(host.displayName) the host (id: \(getPeerID(for: host) ?? 0) -> \(HOST_ID))")
 		hostOriginalID = getPeerID(for: host)
-
+		
 		self.hostChanged.emit(Int(hostOriginalID ?? 0), Int(HOST_ID))
 		setPeerID(for: host, id: HOST_ID)
 
@@ -491,8 +503,9 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 
 	func finalizeMatch() {
 		// When the host has been decided we can consider ourselves connected
-		// The reason we do this is that we need to pick a player to be HOST_ID before then
+		// the reason we do this is that we need to pick a player to be HOST_ID before then
 		if let localPeerID = getPeerID(for: GKLocalPlayer.local) {
+			GD.print("[GameCenterPeer] Connected to server")
 			// Setting the connectionStatus will trigger the connected_to_server event
 			connectionStatus = .connected
 			uniqueID = localPeerID
@@ -535,13 +548,55 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 		}
 	}
 
-	func sendPeerData(_ peerData: PeerData, to players: [GKPlayer], with mode: GKMatch.SendDataMode) {
+	func sendPeerData(_ peerData: PeerData, to players: [GKPlayer]) {
 		do {
-			//GD.print("-> SENDING\t peerData(id: \(peerData.id!), \(mode))")
 			let data = encode(peerData: peerData)
-			try match?.send(data!, to: players, dataMode: mode)
+			try match!.send(data!, to: players, dataMode: .reliable)
 		} catch {
 			GD.pushError("[GameCenterPeer] Failed to send peerData: \(error)")
+		}
+	}
+
+	func sendPingData(_ pingType: PingData.PingType, to players: [GKPlayer]) {
+		do {
+			let data = encode(pingData: PingData(pingType))
+			try match?.send(data!, to: players, dataMode: .reliable)
+		} catch {
+			GD.pushError("[GameCenterPeer] Failed to send dataRequest: \(error)")
+		}
+	}
+
+	func validateHandshakes() {
+		guard handshakeRetries < MAX_HANDSHAKE_RETRIES else {
+			GD.print("[GameCenterPeer] Handshaking failed, disconnecting")
+			disconnect()
+			return
+		}
+
+		handshakeRetries += 1
+		//GD.print("[GameCenterPeer] Validating handshakes ... (attempt \(handshakeRetries)/\(MAX_HANDSHAKE_RETRIES))")
+
+		Task {
+			do {
+				try await Task.sleep(for: .seconds(HANDSHAKE_RETRY_INTERVAL))
+				guard requiredHandshakes > 0 else {
+					return
+				}
+
+				if match != nil {
+					for player in match!.players {
+						guard let peerID = getPlayerWithID(gamePlayerID: player.gamePlayerID) else {
+							continue
+						}
+						GD.print("[GameCenterPeer] Requesting handshake from \(player.displayName)")
+						sendPingData(.handshakeRequest, to: [player])
+					}
+				}
+
+				validateHandshakes()
+			} catch {
+				GD.pushError("[GameCenterPeer] Failed to validate handshakes: \(error)")
+			}
 		}
 	}
 
@@ -557,6 +612,8 @@ class GameCenterMultiplayerPeer: MultiplayerPeerExtension {
 		connectionStatus = .disconnected
 		activeMode = .none
 		uniqueID = 0
+		hostOriginalID = nil
+		handshakeRetries = 0
 
 		match?.disconnect()
 		match = nil
