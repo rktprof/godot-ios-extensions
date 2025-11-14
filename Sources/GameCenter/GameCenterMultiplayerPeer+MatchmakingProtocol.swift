@@ -1,5 +1,5 @@
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 extension GameCenterMultiplayerPeer: GameCenterMatchmakingProtocol {
 	// Connection flow

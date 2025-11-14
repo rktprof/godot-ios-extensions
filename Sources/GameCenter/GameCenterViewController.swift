@@ -1,5 +1,5 @@
 #if canImport(UIKit)
-import SwiftGodot
+import SwiftGodotRuntime
 import GameKit
 import UIKit
 

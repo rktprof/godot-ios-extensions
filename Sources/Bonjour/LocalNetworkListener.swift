@@ -1,5 +1,5 @@
 import Network
-import SwiftGodot
+import SwiftGodotRuntime
 
 @Godot
 class LocalNetworkListener: RefCounted {

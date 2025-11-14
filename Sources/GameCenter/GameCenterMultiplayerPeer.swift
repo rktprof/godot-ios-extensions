@@ -1,5 +1,5 @@
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 @Godot
 class GameCenterMultiplayerPeer: MultiplayerPeerExtension {

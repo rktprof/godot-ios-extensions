@@ -1,6 +1,6 @@
 import Foundation
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 struct DataPacket: Codable {
 	var peerData: PeerData?

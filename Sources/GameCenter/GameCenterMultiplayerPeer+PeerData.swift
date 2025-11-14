@@ -1,5 +1,5 @@
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 struct PeerData: Codable {
 	var id: Int32?

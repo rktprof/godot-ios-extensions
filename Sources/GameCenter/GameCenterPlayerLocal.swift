@@ -1,5 +1,5 @@
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 /// Holds local player data in a Godot friendly format
 @Godot

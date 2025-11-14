@@ -52,27 +52,37 @@ let package = Package(
 	targets: [
 		.target(
 			name: "Bonjour",
-			dependencies: ["SwiftGodot"],
+			dependencies: [
+				.product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+			],
 			swiftSettings: swiftSettings
 		),
 		.target(
 			name: "GameCenter",
-			dependencies: ["SwiftGodot"],
+			dependencies: [
+				.product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+			],
 			swiftSettings: swiftSettings
 		),
 		.target(
 			name: "Haptics",
-			dependencies: ["SwiftGodot"],
+			dependencies: [
+				.product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+			],
 			swiftSettings: swiftSettings
 		),
 		.target(
 			name: "InAppPurchase",
-			dependencies: ["SwiftGodot"],
+			dependencies: [
+				.product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+			],
 			swiftSettings: swiftSettings
 		),
 		.target(
 			name: "Settings",
-			dependencies: ["SwiftGodot"],
+			dependencies: [
+				.product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+			],
 			swiftSettings: swiftSettings
 		),
 	]

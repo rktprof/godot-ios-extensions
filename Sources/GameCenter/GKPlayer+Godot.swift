@@ -1,7 +1,7 @@
 // Extension to convert UIImage & NSImage to the Godot friendly Image type
 
 import GameKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 #if canImport(UIKit)
 import UIKit
