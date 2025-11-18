@@ -1,6 +1,6 @@
 #if canImport(Foundation)
 import Foundation
-import SwiftGodot
+import SwiftGodotRuntime
 
 #if canImport(UIKit)
 import UIKit

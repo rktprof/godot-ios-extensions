@@ -17,7 +17,7 @@ extension GKPlayer {
 		case failedToGetImageData
 	}
 
-	func loadImage(size: GKPlayer.PhotoSize) async throws -> Image {
+	func loadImage(size: GKPlayer.PhotoSize) async throws -> [UInt8] {
 		#if canImport(UIKit)
 		let photo: UIImage = try await self.loadPhoto(for: size)
 		let picture = try convertImage(photo)
@@ -32,7 +32,7 @@ extension GKPlayer {
 	}
 
 	#if canImport(AppKit)
-	func convertImage(_ image: NSImage) throws -> Image {
+	func convertImage(_ image: NSImage) throws -> [UInt8] {
 		guard let tiffRepresentation = image.tiffRepresentation else {
 			throw ImageConversionError.failedToGetImageData
 		}
@@ -46,21 +46,17 @@ extension GKPlayer {
 			throw ImageConversionError.failedToGetImageData
 		}
 
-		let image: Image = Image()
-		image.loadPngFromBuffer(PackedByteArray([UInt8](pngData)))
-		return image
+		return [UInt8](pngData)
 	}
 	#endif
 
 	#if canImport(UIKit)
-	func convertImage(_ image: UIImage) throws -> Image {
+	func convertImage(_ image: UIImage) throws -> [UInt8] {
 		guard let pngData: Data = image.pngData() else {
 			throw ImageConversionError.failedToGetImageData
 		}
 
-		let image: Image = Image()
-		image.loadPngFromBuffer(PackedByteArray([UInt8](pngData)))
-		return image
+		return [UInt8](pngData)
 	}
 	#endif
 }

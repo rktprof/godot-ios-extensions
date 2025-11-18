@@ -1,4 +1,4 @@
-import SwiftGodot
+import SwiftGodotRuntime
 
 @Godot
 class IAPProduct: RefCounted {

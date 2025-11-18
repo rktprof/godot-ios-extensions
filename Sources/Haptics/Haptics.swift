@@ -1,7 +1,7 @@
 #if canImport(CoreHaptics)
 
 import CoreHaptics
-import SwiftGodot
+import SwiftGodotRuntime
 
 #initSwiftExtension(
 	cdecl: "swift_entry_point",

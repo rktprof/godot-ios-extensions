@@ -1,5 +1,5 @@
 import StoreKit
-import SwiftGodot
+import SwiftGodotRuntime
 
 #initSwiftExtension(
 	cdecl: "swift_entry_point",

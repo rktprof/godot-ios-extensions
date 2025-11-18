@@ -12,7 +12,7 @@ class GameCenterPlayer: RefCounted {
 
 	@Export var isInvitable: Bool = false
 
-	@Export var profilePicture: Image?
+	@Export var profilePicture: [UInt8]?
 
 	/// Deprecated, use gamePlayerID instead. This is however needed for backwards compatibility
 	@Export var playerID: String = ""

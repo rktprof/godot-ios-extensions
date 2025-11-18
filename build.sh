@@ -14,6 +14,8 @@ BUILD_PATH_IOS=".build/arm64-apple-ios"
 BINARY_PATH_MACOS="Bin/macos"
 BUILD_PATH_MACOS=".build"
 
+SWIFT_GODOT_LIBRARY="SwiftGodotRuntime"
+
 # MARK: Inputs
 
 TARGET=$1
@@ -54,7 +56,7 @@ build_ios() {
 		COPY_COMMANDS+=("cp -af ""$product_path/$source:t:r.framework ""$BINARY_PATH_IOS")
 	done
 	
-	COPY_COMMANDS+=("cp -af ""$product_path/SwiftGodot.framework ""$BINARY_PATH_IOS")
+	COPY_COMMANDS+=("cp -af ""$product_path/$SWIFT_GODOT_LIBRARY.framework ""$BINARY_PATH_IOS")
 
 	return 0
 }
@@ -86,7 +88,7 @@ build_macos() {
 		COPY_COMMANDS+=("cp -af $product_path/lib$folder:t:r.dylib $BINARY_PATH_MACOS")
 	done
 
-	COPY_COMMANDS+=("cp -af $product_path/libSwiftGodot.dylib $BINARY_PATH_MACOS")
+	COPY_COMMANDS+=("cp -af $product_path/lib$SWIFT_GODOT_LIBRARY.dylib $BINARY_PATH_MACOS")
 
 	return 0
 }

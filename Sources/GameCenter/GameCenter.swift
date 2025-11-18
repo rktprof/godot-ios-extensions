@@ -212,7 +212,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 		Task {
 			do {
 				let image = try await GKLocalPlayer.local.loadImage(size: .small)
-				onComplete.callDeferred(Variant(OK), Variant(image))
+				onComplete.callDeferred(Variant(OK), Variant(PackedByteArray(image)))
 			} catch {
 				GD.pushError("Failed to load profile picture. \(error)")
 				onComplete.callDeferred(Variant(GameCenterError.failedToLoadPicture.rawValue), nil)

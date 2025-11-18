@@ -85,7 +85,7 @@ extension GameCenter {
 
 				if let friend = self.friends?.first(where: { $0.gamePlayerID == gamePlayerID }) {
 					let image = try await friend.loadImage(size: .small)
-					onComplete.callDeferred(Variant(OK), Variant(image))
+					onComplete.callDeferred(Variant(OK), Variant(PackedByteArray(image)))
 				} else {
 					GD.pushError("Found no friend with id: \(gamePlayerID)")
 					onComplete.callDeferred(Variant(FriendsError.noSuchFriend.rawValue), nil)

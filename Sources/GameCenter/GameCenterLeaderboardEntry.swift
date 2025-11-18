@@ -17,9 +17,9 @@ class GameCenterLeaderboardEntry: RefCounted {
 	@Export var player: GameCenterPlayer?
 
 	@Export var date: Double?
-	@Export var image: Image?
+	@Export var image: [UInt8]?
 
-	convenience init(entry: GKLeaderboard.Entry, image: Image? = nil, excludeDate: Bool = false) {
+	convenience init(entry: GKLeaderboard.Entry, image: [UInt8]? = nil, excludeDate: Bool = false) {
 		self.init()
 
 		self.context = entry.context
