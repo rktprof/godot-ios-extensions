@@ -81,6 +81,14 @@ class Settings: RefCounted {
 		settings.set(value, forKey: id)
 	}
 
+	// MARK: Language
+
+	@Callable(autoSnakeCase: true)
+	func getAppLocale() -> String {
+		let locale = Locale.autoupdatingCurrent
+		return locale.identifier
+	}
+
 	// MARK: General
 
 	@Callable(autoSnakeCase: true)
