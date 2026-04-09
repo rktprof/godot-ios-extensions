@@ -6,6 +6,12 @@ extension GameCenter {
 	enum LeaderboardError: Int, Error {
 		case failedToLoadEntries = 1
 		case failedToSubmitScore = 2
+		case failedToLoadLeaderboard = 3
+	}
+
+	enum LeaderboardType: Int {
+		case classic = 0
+		case recurring = 1
 	}
 
 	/// Submit leadboard score.
@@ -134,6 +140,27 @@ extension GameCenter {
 			range: NSMakeRange(rangeStart, rangeLength),
 			onComplete: onComplete
 		)
+	}
+
+	/// Get leaderboard information of a leaderboard
+	///
+	/// - Parameters:
+	///   - leaderboardID: The identifier for the leaderboard that you enter in App Store Connect.
+	///   - onComplete: Callback with parameters: (error: Variant, leaderboard: GameCenterLeaderboard)
+	func getLeaderboardInfo(leaderboardID: String, onComplete: Callable) {
+		Task {
+			do {
+				let leaderboards = try await GKLeaderboard.loadLeaderboards(IDs: [leaderboardID])
+				if let leaderboard = leaderboards.first {
+					onComplete.callDeferred(Variant(OK), Variant(GameCenterLeaderboard(leaderboard: leaderboard)))
+				} else {
+					onComplete.callDeferred(
+						Variant(LeaderboardError.failedToLoadLeaderboard.rawValue),
+						nil
+					)
+				}
+			}
+		}
 	}
 
 	// MARK: UI Overlay

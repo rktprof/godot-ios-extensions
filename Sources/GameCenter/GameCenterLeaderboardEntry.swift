@@ -5,7 +5,7 @@ import SwiftGodotRuntime
 import Foundation
 #endif
 
-/// Holds Leaderboard data in a Godot friendly format
+/// Holds leaderboard entry data in a Godot friendly format
 @Godot
 class GameCenterLeaderboardEntry: RefCounted {
 	@Export var context: Int?

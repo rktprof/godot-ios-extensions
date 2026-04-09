@@ -12,6 +12,7 @@ import UIKit
 		GameCenterMultiplayerPeer.self,
 		GameCenterPlayer.self,
 		GameCenterPlayerLocal.self,
+		GameCenterLeaderboard.self,
 		GameCenterLeaderboardEntry.self,
 		GameCenterAchievement.self,
 		GameCenterChallenge.self,
@@ -84,7 +85,7 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	public func authenticate(onComplete: Callable = Callable()) {
 		#if os(iOS)
 
-		GKLocalPlayer.local.authenticateHandler = { loginController, error in			
+		GKLocalPlayer.local.authenticateHandler = { loginController, error in
 			guard loginController == nil else {
 				GD.print("Showing login screen")
 				self.viewController.getRootController()?.present(loginController!, animated: true)
@@ -453,6 +454,11 @@ class GameCenter: RefCounted, GKInviteEventListener {
 	@Callable
 	func show_leaderboard_overlay(leaderboardID: String, onClose: Callable) {
 		showLeaderboardOverlay(leaderboardID: leaderboardID, onClose: onClose)
+	}
+
+	@Callable
+	func get_leaderboard_info(leaderboardID: String, onComplete: Callable) {
+		getLeaderboardInfo(leaderboardID: leaderboardID, onComplete: onComplete)
 	}
 
 	// MARK: Invites
