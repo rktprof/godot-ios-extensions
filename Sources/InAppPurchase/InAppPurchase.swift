@@ -19,9 +19,9 @@ let OK: Int = 0
 class InAppPurchase: RefCounted {
 	enum InAppPurchaseStatus: Int {
 		case purchaseOK = 0
-		case purchaseSuccessfulButUnverified = 2
-		case purchasePendingAuthorization = 3
-		case purchaseCancelledByUser = 4
+		case purchaseSuccessfulButUnverified = 1
+		case purchasePendingAuthorization = 2
+		case purchaseCancelledByUser = 3
 	}
 	enum InAppPurchaseError: Int, Error {
 		case failedToGetProducts = 1
