@@ -11,6 +11,8 @@
 BINARY_PATH_IOS="Bin/ios"
 BUILD_PATH_IOS=".build/arm64-apple-ios"
 
+BINARY_PATH_IOS_SIMULATOR="Bin/ios-simulator"
+
 BINARY_PATH_MACOS="Bin/macos"
 BUILD_PATH_MACOS=".build"
 
@@ -22,7 +24,7 @@ TARGET=$1
 CONFIG=$2
 
 if [[ ! $TARGET ]]; then
-	TARGET="all"
+	TARGET="default"
 fi
 
 if [[ ! $CONFIG ]]; then
@@ -55,8 +57,38 @@ build_ios() {
 	for source in $source_path/*; do
 		COPY_COMMANDS+=("cp -af ""$product_path/$source:t:r.framework ""$BINARY_PATH_IOS")
 	done
-	
+
 	COPY_COMMANDS+=("cp -af ""$product_path/$SWIFT_GODOT_LIBRARY.framework ""$BINARY_PATH_IOS")
+
+	return 0
+}
+
+# MARK: Build iOS Simulator
+
+build_ios_simulator() {
+	xcodebuild \
+		-scheme "iOS Plugins-Package"  \
+		-destination 'generic/platform=iOS Simulator' \
+		-derivedDataPath "$BUILD_PATH_IOS_SIMULATOR" \
+		-clonedSourcePackagesDirPath ".build" \
+		-configuration "$1" \
+		-skipPackagePluginValidation \
+		-quiet
+
+	if [[ $? -gt 0 ]]; then
+		echo "${BOLD}${RED}Failed to build $target iOS Simulator library${RESET_FORMATTING}"
+		return 1
+	fi
+
+	echo "${BOLD}${GREEN}iOS Simulator build succeeded${RESET_FORMATTING}"
+
+	product_path="$BUILD_PATH_IOS/Build/Products/$1-iphonesimulator/PackageFrameworks"
+	source_path="Sources"
+	for source in $source_path/*; do
+		COPY_COMMANDS+=("cp -af ""$product_path/$source:t:r.framework ""$BINARY_PATH_IOS_SIMULATOR")
+	done
+
+	COPY_COMMANDS+=("cp -af ""$product_path/$SWIFT_GODOT_LIBRARY.framework ""$BINARY_PATH_IOS_SIMULATOR")
 
 	return 0
 }
@@ -81,7 +113,7 @@ build_macos() {
 	else
 		product_path="$BUILD_PATH_MACOS/arm64-apple-macosx/$1"
 	fi
- 
+
 	source_path="Sources"
 	for folder in $source_path/*
 	do
@@ -98,14 +130,19 @@ build_macos() {
 build_libs() {
 	echo "Building libraries..."
 
-	if [[ "$1" == "all" || "$1" == "macos" ]]; then
+	if [[ "$1" == "default" || "$1" == "all" || "$1" == "macos" ]]; then
 		echo "${BOLD}${CYAN}Building macOS library ($2)...${RESET_FORMATTING}"
 		build_macos "$2"
 	fi
 
-	if [[ "$1" == "all" || "$1" == "ios" ]]; then
+	if [[ "$1" == "default" || "$1" == "all" || "$1" == "ios" ]]; then
 		echo "${BOLD}${CYAN}Building iOS libraries ($2)...${RESET_FORMATTING}"
 		build_ios "$2"
+	fi
+
+	if [[ "$1" == "all" || "$1" == "simulator" ]]; then
+		echo "${BOLD}${CYAN}Building iOS Simulator libraries ($2)...${RESET_FORMATTING}"
+		build_ios_simulator "$2"
 	fi
 
 	if [[ ${#COPY_COMMANDS[@]} -gt 0 ]]; then
